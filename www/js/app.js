@@ -78,7 +78,7 @@ const AdController = {
 };
 AdController.init();
 
-// --- 特效系統 ---
+// --- 特效系統 (彩帶) ---
 const ConfettiSystem = {
     spawn() {
         const container = document.getElementById('confetti-container');
@@ -99,16 +99,17 @@ const ConfettiSystem = {
 
 // --- Modal 工具 ---
 const Modal = {
+    safeGet(id) { return document.getElementById(id); },
     openBase(title, content, icon) {
-        const t = document.getElementById('modal-title'); if(t) t.textContent = title;
-        const m = document.getElementById('modal-msg'); 
+        const t = this.safeGet('modal-title'); if(t) t.textContent = title;
+        const m = this.safeGet('modal-msg');
         if(m) { m.innerHTML = ''; if (content instanceof Node) m.appendChild(content); else m.innerHTML = content; }
-        const i = document.getElementById('modal-icon'); if(i) i.textContent = icon;
-        const body = document.getElementById('modal-content'); if(body) body.className = 'modal-body';
-        const modal = document.getElementById('modal'); if(modal) modal.style.display = 'flex';
+        const i = this.safeGet('modal-icon'); if(i) i.textContent = icon;
+        const body = this.safeGet('modal-content'); if(body) body.className = 'modal-body';
+        const modal = this.safeGet('modal'); if(modal) modal.style.display = 'flex';
     },
     setSingleAction(btnText, onConfirm) {
-        const actions = document.getElementById('modal-actions');
+        const actions = this.safeGet('modal-actions');
         if(!actions) return;
         actions.innerHTML = '';
         const btn = document.createElement('button'); btn.className = 'btn-primary w-full';
@@ -122,19 +123,19 @@ const Modal = {
     },
     show2(title, msg) {
         this.openBase(title, msg, "🏯");
-        const modal = document.getElementById('modal'); if(modal) modal.style.display = 'flex';
+        const modal = this.safeGet('modal'); if(modal) modal.style.display = 'flex';
     },
     showVictory(title, msg, actionsHtml) {
         this.openBase(title, msg, "🎉");
-        const act = document.getElementById('modal-actions'); if(act) act.innerHTML = actionsHtml;
-        const body = document.getElementById('modal-content'); if(body) body.className = 'modal-body modal-pop';
-        const modal = document.getElementById('modal'); if(modal) modal.style.display = 'flex';
+        const act = this.safeGet('modal-actions'); if(act) act.innerHTML = actionsHtml;
+        const body = this.safeGet('modal-content'); if(body) body.className = 'modal-body modal-pop';
+        const modal = this.safeGet('modal'); if(modal) modal.style.display = 'flex';
     },
     showLevelUp(title, msg) {
         this.openBase(title, msg, "🏅");
         this.setSingleAction("太棒了", null);
-        const body = document.getElementById('modal-content'); if(body) body.className = 'modal-body modal-levelup';
-        const modal = document.getElementById('modal'); if(modal) modal.style.display = 'flex';
+        const body = this.safeGet('modal-content'); if(body) body.className = 'modal-body modal-levelup';
+        const modal = this.safeGet('modal'); if(modal) modal.style.display = 'flex';
     },
     close() { const m = document.getElementById('modal'); if(m) m.style.display = 'none'; }
 };
@@ -175,9 +176,7 @@ const App = {
 
     dailyResetCheck() {
         const today = new Date().toDateString();
-        // 確保 mission 物件存在 (防止舊存檔報錯)
         if (!Data.mission) Data.mission = { date: null, count: 0, claimed: [false, false, false] };
-        
         if (Data.mission.date !== today) {
             Data.mission.date = today;
             Data.mission.count = 0;
@@ -219,31 +218,27 @@ const App = {
         const script = document.createElement('script');
         script.src = `js/data_${fileNum}.js`;
         script.onload = () => { this.isLoadingRealm = false; Modal.close(); if (callback) callback(); };
-        script.onerror = () => { this.isLoadingRealm = false; Modal.show("錯誤", "讀取失敗", "重試", "⚠️", () => this.ensureRealmLoaded(realmIdx, callback)); };
+        script.onerror = () => { this.isLoadingRealm = false; console.error("Data load failed"); };
         document.body.appendChild(script);
     },
 
     switchView(id) {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        const el = document.getElementById(id); if(el) el.classList.add('active');
+        const el = document.getElementById(id);
+        if(el) el.classList.add('active');
     },
 
-    // --- [安全版] updateUI ---
     updateUI() { 
-        // 輔助函式：安全設定文字
         const setText = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
-        
-        setText('coin-text', Data.coins);
-        setText('key-text', Data.keys);
+        setText('coin-text', Data.coins); // 舊版相容
+        setText('key-text', Data.keys);   // 舊版相容
         setText('btn-hint-count', Data.keys);
         setText('shop-coin-text', Data.coins);
 
-        // 等級顯示
         const req = this.getRequiredXP(Data.playerLevel || 1);
         setText('lvl-num', `${Data.playerLevel || 1}等`);
         setText('lvl-progress', `${Data.xp || 0}/${req}`);
 
-        // 任務紅點
         if (Data.mission) {
             const hasClaimable = [0,1,2].some(i => {
                 const targets = [3, 5, 10];
@@ -253,21 +248,15 @@ const App = {
             if(dot) dot.style.display = hasClaimable ? 'block' : 'none';
         }
 
-        // 蠟燭防呆
         const isFull = Data.keys > 9;
         const topAdBtn = document.getElementById('btn-ad');
-        if (topAdBtn) { 
-            topAdBtn.style.opacity = isFull ? '0.3' : '1'; 
-            topAdBtn.style.pointerEvents = isFull ? 'none' : 'auto'; 
-        }
+        if (topAdBtn) { topAdBtn.style.opacity = isFull ? '0.3' : '1'; topAdBtn.style.pointerEvents = isFull ? 'none' : 'auto'; }
         const shopAdBtn = document.getElementById('shop-btn-watch-ad');
         if (shopAdBtn) {
             if (isFull) {
-                shopAdBtn.textContent = "已滿"; shopAdBtn.disabled = true;
-                shopAdBtn.className = "bg-stone-400 text-white px-3 py-1 rounded cursor-not-allowed";
+                shopAdBtn.textContent = "已滿"; shopAdBtn.classList.add('btn-disabled'); shopAdBtn.disabled = true;
             } else {
-                shopAdBtn.textContent = "播放"; shopAdBtn.disabled = false;
-                shopAdBtn.className = "bg-stone-800 text-white px-3 py-1 rounded";
+                shopAdBtn.textContent = "播放"; shopAdBtn.classList.remove('btn-disabled'); shopAdBtn.disabled = false;
             }
         }
     },
@@ -285,16 +274,20 @@ const App = {
         bind('btn-reset', () => Game.resetLevel());
         bind('btn-check', () => Game.checkAnswer());
         bind('btn-back-note', () => this.switchView('view-home'));
-        bind('btn-ad', () => this.watchAd());
+        
         bind('btn-hint-bottom', () => Game.useHint());
         bind('btn-top-home', () => this.backToHomeConfirm());
         bind('btn-top-mission', () => this.showMissions());
-        bind('btn-top-notebook', () => this.showNotebook());
         bind('btn-top-shop', () => { const el=document.getElementById('shop-modal'); if(el) el.style.display='flex'; });
+        bind('btn-top-notebook', () => this.showNotebook());
+        
+        bind('shop-btn-daily', () => this.dailyCheckIn());
+        bind('shop-btn-watch-ad', () => this.watchAd());
     },
 
     backToHomeConfirm() {
-        if (document.getElementById('view-game').classList.contains('active')) {
+        const viewGame = document.getElementById('view-game');
+        if (viewGame && viewGame.classList.contains('active')) {
             const m = document.getElementById('modal-home-confirm'); if(m) m.style.display = 'flex';
         } else {
             this.switchView('view-home');
@@ -323,8 +316,10 @@ const App = {
             div.innerHTML = `<div><div class="mission-desc">完成 ${target} 個新關卡</div><div class="mission-reward">🪙${rewards[idx].coins}  🏅${rewards[idx].xp}XP</div></div>${btnHtml}`;
             list.appendChild(div);
         });
-        const txt = document.getElementById('mission-progress-text'); if(txt) txt.textContent = Data.mission.count;
-        const m = document.getElementById('modal-mission'); if(m) m.style.display = 'flex';
+        const txt = document.getElementById('mission-progress-text');
+        if(txt) txt.textContent = Data.mission.count;
+        const m = document.getElementById('modal-mission');
+        if(m) m.style.display = 'flex';
     },
 
     claimMission(idx) {
@@ -345,10 +340,8 @@ const App = {
         const wheel = document.getElementById('wheel');
         const btn = document.getElementById('btn-spin');
         if(btn) btn.disabled = true;
-        
         const randDeg = 1800 + Math.floor(Math.random() * 360);
         if(wheel) wheel.style.transform = `rotate(${randDeg}deg)`;
-
         setTimeout(() => {
             if(btn) btn.disabled = false;
             if(wheel) {
@@ -356,7 +349,7 @@ const App = {
                 wheel.style.transform = `rotate(${randDeg % 360}deg)`;
                 setTimeout(() => { wheel.style.transition = 'transform 3s cubic-bezier(0.2, 0.8, 0.3, 1)'; }, 50);
             }
-            const prize = Math.random() > 0.5 ? 10 : 100; 
+            const prize = Math.random() > 0.5 ? 10 : 100;
             Data.coins += prize;
             Data.save();
             this.updateUI();
@@ -380,7 +373,10 @@ const App = {
         const btnHome = document.getElementById('btn-daily'); 
         if(btnHome) { btnHome.innerHTML = isChecked ? "📅 今日已簽到" : "📅 簽到領蠟燭"; btnHome.style.opacity = isChecked ? "0.5":"1"; }
         const btnShop = document.getElementById('shop-btn-daily');
-        if(btnShop) { btnShop.textContent = isChecked?"已領":"領取"; btnShop.disabled=isChecked; btnShop.className = isChecked?"bg-stone-400 text-white px-3 py-1 rounded":"bg-stone-800 text-white px-3 py-1 rounded"; }
+        if(btnShop) { 
+            btnShop.textContent = isChecked?"已領":"領取"; btnShop.disabled=isChecked; 
+            btnShop.className = isChecked?"bg-stone-400 text-white px-3 py-1 rounded":"bg-stone-800 text-white px-3 py-1 rounded"; 
+        }
     },
     dailyCheckIn() {
         if (Data.lastCheckIn === new Date().toDateString()) return Modal.show("提示", "已簽到！");
@@ -449,8 +445,8 @@ const Game = {
         const lvl = this.getLevelData(idx);
         if (!lvl) { Modal.show("錯誤", "無資料", "返回", "⚠️", () => App.showLevels()); return; }
         
-        document.getElementById('current-level-title').textContent = `第 ${idx + 1} 關`;
-        const grid = document.getElementById('answer-grid'); grid.innerHTML = '';
+        const title = document.getElementById('current-level-title'); if(title) title.textContent = `第 ${idx + 1} 關`;
+        const grid = document.getElementById('answer-grid'); if(grid) grid.innerHTML = '';
         const hintArea = document.getElementById('hint-result-area'); if(hintArea) { hintArea.innerHTML = ''; hintArea.className = ''; }
         this.updateHintButton();
 
@@ -474,13 +470,16 @@ const Game = {
                 row.appendChild(clearBtn);
             }
             for(let i=0; i<len; i++) { const d = document.createElement('div'); d.className='drop-zone'; row.appendChild(d); }
-            grid.appendChild(row);
+            if(grid) grid.appendChild(row);
         });
 
-        const pool = document.getElementById('character-pool'); pool.innerHTML = '';
-        lvl.chars.split('').sort(()=>Math.random()-0.5).forEach(c => {
-            const t = document.createElement('div'); t.className='char-tile'; t.textContent=c; pool.appendChild(t);
-        });
+        const pool = document.getElementById('character-pool'); 
+        if(pool) {
+            pool.innerHTML = '';
+            lvl.chars.split('').sort(()=>Math.random()-0.5).forEach(c => {
+                const t = document.createElement('div'); t.className='char-tile'; t.textContent=c; pool.appendChild(t);
+            });
+        }
         this.selectedTile = null; 
         
         this.tutorialStep = 0;
@@ -562,7 +561,7 @@ const Game = {
         if(target) this.highlightElement(target);
     },
     highlightElement(el) { 
-        document.getElementById('tutorial-mask').style.display = 'block';
+        const mask = document.getElementById('tutorial-mask'); if(mask) mask.style.display = 'block';
         el.classList.add('tutorial-highlight');
         let ptr = document.getElementById('tutorial-pointer');
         if (!ptr) {
@@ -579,7 +578,7 @@ const Game = {
         }, 50);
     },
     clearTutorialHighlights() { 
-        document.getElementById('tutorial-mask').style.display = 'none';
+        const mask = document.getElementById('tutorial-mask'); if(mask) mask.style.display = 'none';
         document.querySelectorAll('.tutorial-highlight').forEach(el => el.classList.remove('tutorial-highlight'));
         const ptr = document.getElementById('tutorial-pointer'); if(ptr) ptr.style.display = 'none';
     },
@@ -675,6 +674,7 @@ const Game = {
             const t = e.target.closest('.char-tile');
             const z = e.target.closest('.drop-zone');
             let valid = false;
+            // 這裡保留基本檢查，完整教學邏輯在 updateTutorialUI
             if(Game.tutorialStep>=1) valid=true; 
             if(!valid) return;
         }
