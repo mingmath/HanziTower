@@ -6,7 +6,6 @@ window.onerror = function(msg, url, line) {
 };
 
 // --- Google H5 Ads 設定與控制器 ---
-// 確保變數只宣告一次
 let wasMusicPlaying = false; 
 
 const AdController = {
@@ -33,7 +32,6 @@ const AdController = {
     },
 
     beforeAd() {
-        // 廣告開始播放，隱藏 Loading (廣告會蓋住)，標記狀態
         AdController.hideLoading();
         AdController.isAdActive = true;
 
@@ -49,7 +47,7 @@ const AdController = {
 
     afterAd() {
         AdController.isAdActive = false;
-        AdController.hideLoading(); // 確保結束時也關閉
+        AdController.hideLoading();
 
         const audio = document.getElementById('bg-music');
         if (wasMusicPlaying && audio) {
@@ -60,7 +58,7 @@ const AdController = {
 
     // 呼叫獎勵廣告
     showRewardAd(onSuccess) {
-        this.showLoading(); // 顯示轉圈圈
+        this.showLoading();
 
         if (typeof adBreak !== 'function') {
             console.warn("Ads SDK not ready, using Mock.");
@@ -87,7 +85,7 @@ const AdController = {
             }
         });
 
-        // 3秒保險絲：防止廣告卡住 Loading 不消失
+        // 3秒保險絲
         setTimeout(() => {
             if (!AdController.isAdActive) {
                 AdController.hideLoading();
@@ -97,13 +95,13 @@ const AdController = {
 
     // 插頁廣告 (過關使用)
     showInterstitialAd(nextAction) {
-        this.showLoading(); // 顯示轉圈圈
+        this.showLoading();
 
         let hasProceeded = false;
         const safeNext = () => {
             if (hasProceeded) return;
             hasProceeded = true;
-            AdController.hideLoading(); // 確保下一步前關閉 Loading
+            AdController.hideLoading();
             if (nextAction) nextAction();
         };
 
@@ -129,7 +127,7 @@ const AdController = {
             safeNext();
         }
 
-        // 1.5秒保險絲：若無廣告填充或被阻擋，強制進入下一關
+        // 1.5秒保險絲
         setTimeout(() => {
             if (!AdController.isAdActive && !hasProceeded) {
                 console.warn("Ad timeout. Forcing next level.");
@@ -139,7 +137,6 @@ const AdController = {
     }
 };
 
-// 初始化廣告設定
 AdController.init();
 
 // --- 工具：模態視窗 ---
@@ -218,11 +215,8 @@ const App = {
             setTimeout(() => App.init(), 100);
             return; 
         }
-        
         Data.load(); 
-        
         this.currentViewRealm = Math.floor(Data.unlockedLevel / 100);
-        
         this.ensureRealmLoaded(this.currentViewRealm, () => {
             this.updateUI(); 
             this.bindEvents(); 
@@ -235,7 +229,6 @@ const App = {
             if (callback) callback();
             return;
         }
-
         if (this.isLoadingRealm) return;
         this.isLoadingRealm = true;
 
@@ -249,7 +242,6 @@ const App = {
             Modal.close(); 
             if (callback) callback();
         };
-
         script.onerror = () => {
             console.error(`Failed to load data for realm ${realmIdx + 1}`);
             this.isLoadingRealm = false;
@@ -257,7 +249,6 @@ const App = {
                 this.ensureRealmLoaded(realmIdx, callback);
             });
         };
-
         document.body.appendChild(script);
     },
 
@@ -269,38 +260,27 @@ const App = {
     updateUI() { 
         document.getElementById('coin-text').textContent = Data.coins; 
         document.getElementById('key-text').textContent = Data.keys;
+        
+        // 更新底部提示按鈕的數量
         const hintCountEl = document.getElementById('btn-hint-count');
-        if (hintCountEl) hintCountEl.textContent = Data.keys
+        if (hintCountEl) hintCountEl.textContent = Data.keys;
 
-        // 防呆邏輯：蠟燭 > 9 (即 10 根以上) 時
+        // 防呆邏輯：蠟燭 > 9
         const isFull = Data.keys > 9;
-
-        // 1. 控制頂部小電視按鈕
         const topAdBtn = document.getElementById('btn-ad');
         if (topAdBtn) {
-            if (isFull) {
-                topAdBtn.style.opacity = '0.3';       // 變透明
-                topAdBtn.style.pointerEvents = 'none'; // 禁止點擊
-            } else {
-                topAdBtn.style.opacity = '1';
-                topAdBtn.style.pointerEvents = 'auto';
-            }
+            topAdBtn.style.opacity = isFull ? '0.3' : '1';
+            topAdBtn.style.pointerEvents = isFull ? 'none' : 'auto';
         }
-
-        // 2. 控制商城內的播放按鈕
         const shopAdBtn = document.getElementById('shop-btn-watch-ad');
         if (shopAdBtn) {
             if (isFull) {
                 shopAdBtn.textContent = "已滿";
-                shopAdBtn.classList.add('btn-disabled'); // 套用灰色樣式
-                shopAdBtn.classList.add('opacity-50');
-                shopAdBtn.classList.add('cursor-not-allowed');
-                shopAdBtn.disabled = true; // 真正的停用
+                shopAdBtn.classList.add('btn-disabled', 'opacity-50', 'cursor-not-allowed');
+                shopAdBtn.disabled = true;
             } else {
                 shopAdBtn.textContent = "播放";
-                shopAdBtn.classList.remove('btn-disabled');
-                shopAdBtn.classList.remove('opacity-50');
-                shopAdBtn.classList.remove('cursor-not-allowed');
+                shopAdBtn.classList.remove('btn-disabled', 'opacity-50', 'cursor-not-allowed');
                 shopAdBtn.disabled = false;
             }
         }
@@ -311,28 +291,25 @@ const App = {
         bind('btn-start', () => {
             this.showLevels();
             const audio = document.getElementById('bg-music');
-            if (Data.musicOn && audio) { 
-                audio.play().catch(()=>{}); 
-            }
+            if (Data.musicOn && audio) { audio.play().catch(()=>{}); }
         });
         bind('btn-daily', () => this.dailyCheckIn());
         bind('btn-notebook', () => this.showNotebook());
         bind('btn-top-notebook', () => this.showNotebook());
         bind('btn-back-home', () => this.switchView('view-home'));
         bind('btn-stop-game', () => this.showLevels());
-        bind('btn-hint-bottom', () => Game.useHint());
+        bind('btn-reset', () => Game.resetLevel());
         bind('btn-check', () => Game.checkAnswer());
         bind('btn-back-note', () => this.switchView('view-home'));
         bind('btn-shop', () => document.getElementById('shop-modal').style.display = 'flex');
         bind('btn-ad', () => this.watchAd());
+        
+        // 綁定新的左下角提示按鈕
+        bind('btn-hint-bottom', () => Game.useHint());
     },
 
     watchAd() {
-        // 如果蠟燭太多，直接阻擋
-        if (Data.keys > 9) {
-            return Modal.show("提示", "您的蠟燭已經很多了，\n請先使用一些再回來吧！");
-        }
-
+        if (Data.keys > 9) return Modal.show("提示", "您的蠟燭已經很多了，\n請先使用一些再回來吧！");
         AdController.showRewardAd(() => {
             Data.keys += 1; Data.save(); this.updateUI(); 
             Modal.show("獎勵發送", "感謝觀看！獲得 1 根蠟燭 🕯️");
@@ -368,9 +345,7 @@ const App = {
         const nr = this.currentViewRealm + d;
         if (nr >= 0 && nr < 20 && Data.unlockedLevel >= nr * 100) { 
             this.currentViewRealm = nr; 
-            this.ensureRealmLoaded(nr, () => {
-                this.renderRealm(); 
-            });
+            this.ensureRealmLoaded(nr, () => { this.renderRealm(); });
         }
         else if (Data.unlockedLevel < nr * 100) Modal.show("封印中", "請先完成上一個國度！");
     },
@@ -386,19 +361,16 @@ const App = {
     renderRealm() {
         const container = document.getElementById('level-list-container'); if(!container) return; container.innerHTML = '';
         document.getElementById('realm-title').textContent = RealmNames[this.currentViewRealm] || `第 ${this.currentViewRealm + 1} 國度`;
-        
         for (let idx = this.currentViewRealm * 100; idx < (this.currentViewRealm + 1) * 100; idx++) {
             const btn = document.createElement('button'); btn.className = 'level-btn';
             if (idx < Data.unlockedLevel) { 
                 btn.classList.add('completed'); 
                 btn.innerHTML = `<small>已破</small>${idx + 1}`; 
                 btn.onclick = () => Game.startLevel(idx); 
-            }
-            else if (idx === Data.unlockedLevel) { 
+            } else if (idx === Data.unlockedLevel) { 
                 btn.textContent = idx + 1; 
                 btn.onclick = () => Game.startLevel(idx); 
-            }
-            else { 
+            } else { 
                 btn.classList.add('locked'); 
                 btn.textContent = '🔒'; 
             }
@@ -438,6 +410,7 @@ const Game = {
     selectedTile: null,
     tutorialStep: 0, 
     hintIndex: 0,
+    hintTimeout: null,
 
     getLevelData(globalIdx) {
         const realmIdx = Math.floor(globalIdx / 100);
@@ -468,7 +441,11 @@ const Game = {
 
         document.getElementById('current-level-title').textContent = `第 ${idx + 1} 關`;
         const grid = document.getElementById('answer-grid'); grid.innerHTML = '';
-        const hintArea = document.getElementById('hint-result-area'); if(hintArea) hintArea.innerHTML = '';
+        const hintArea = document.getElementById('hint-result-area'); 
+        if(hintArea) {
+            hintArea.innerHTML = '';
+            hintArea.className = ''; // 清除舊樣式
+        }
         
         this.updateHintButton();
 
@@ -524,13 +501,11 @@ const Game = {
         }
     },
 
-updateHintButton() {
-        // 【修改】ID 變更為 btn-hint-bottom
+    updateHintButton() {
+        // [修正] ID 改為 btn-hint-bottom
         const btn = document.getElementById('btn-hint-bottom');
         if (!btn) return;
-        
         const lvl = this.getLevelData(this.currentLevelIdx);
-        // 如果提示用完了，變灰色
         if (!lvl || this.hintIndex >= lvl.sols.length) {
             btn.classList.add('btn-disabled');
             btn.style.opacity = '0.5';
@@ -566,11 +541,12 @@ updateHintButton() {
 
         try {
             switch(this.tutorialStep) {
+                // 第一關
                 case 1: target = pool.find(t => t.textContent.trim() === '希'); break;
                 case 2: target = towers[0].children[1]; break; 
                 case 3: target = pool.find(t => t.textContent.trim() === '望'); break;
                 case 4: target = towers[0].children[2]; break; 
-                case 5: NPC.say("很好！接下來試試右邊的塔。\n有時候我們可能會眼花看錯...", "繼續", () => { this.tutorialStep = 6; this.updateTutorialUI(); }); break;
+                case 5: NPC.say("很好！接下來試試右邊的塔。", "繼續", () => { this.tutorialStep = 6; this.updateTutorialUI(); }); break;
                 case 6: target = pool.find(t => t.textContent.trim() === '游'); break;
                 case 7: target = towers[2].children[1]; break; 
                 case 8: target = pool.find(t => t.textContent.trim() === '泳'); break;
@@ -597,14 +573,15 @@ updateHintButton() {
                 case 26: setTimeout(() => { target = document.querySelector('#modal-actions button'); if(target) this.highlightElement(target); }, 300); return;
                 case 27: setTimeout(() => { target = document.querySelector('#modal-actions button:last-child'); if(target) this.highlightElement(target); }, 300); return;
 
-                case 30: target = document.getElementById('btn-hint'); break;
+                // 第二關 (教學步驟 30, 37 修改為 btn-hint-bottom)
+                case 30: target = document.getElementById('btn-hint-bottom'); break;
                 case 31: NPC.say("瞧！我告訴你第一個詞是「了解」。\n請試著填入吧！", "沒問題", () => { this.tutorialStep = 32; this.updateTutorialUI(); }); break;
                 case 32: target = pool.find(t => t.textContent.trim() === '了'); break;
                 case 33: target = towers[0].children[1]; break; 
                 case 34: target = pool.find(t => t.textContent.trim() === '解'); break;
                 case 35: target = towers[0].children[2]; break; 
                 case 36: NPC.say("很好！讓我們再用一次提示。", "好", () => { this.tutorialStep = 37; this.updateTutorialUI(); }); break;
-                case 37: target = document.getElementById('btn-hint'); break;
+                case 37: target = document.getElementById('btn-hint-bottom'); break;
                 case 38: target = pool.find(t => t.textContent.trim() === '點'); break;
                 case 39: target = towers[1].children[1]; break;
                 case 40: target = pool.find(t => t.textContent.trim() === '選'); break;
@@ -673,21 +650,19 @@ updateHintButton() {
         this.updateHintButton();
     },
 
-scriptedHint(word) {
+    scriptedHint(word) {
         const area = document.getElementById('hint-result-area');
         if(area) {
-            // 清空舊的，確保畫面乾淨
-            area.innerHTML = '';
+            area.innerHTML = ''; // 清空舊的
             
             const span = document.createElement('span');
             span.textContent = "💡 " + word; 
             area.appendChild(span);
             
-            // 加入顯示類別
+            // 顯示動畫
             area.classList.add('show');
             
-            // (選用) 3秒後自動消失，讓畫面清爽
-            // 如果您希望提示一直留著直到過關，請刪除下面這段 setTimeout
+            // 4秒後自動消失
             if (this.hintTimeout) clearTimeout(this.hintTimeout);
             this.hintTimeout = setTimeout(() => {
                 area.classList.remove('show');
@@ -743,7 +718,7 @@ scriptedHint(word) {
                         }
                     };
 
-                    // 插頁廣告邏輯：每4關 (4, 8, 12...) 顯示一次
+                    // 插頁廣告邏輯：每4關 (4, 8, 12...)
                     if (this.currentLevelIdx > 0 && (this.currentLevelIdx + 1) % 4 === 0) {
                         AdController.showInterstitialAd(nextAction);
                     } else {
@@ -808,50 +783,43 @@ scriptedHint(word) {
             const towers = document.getElementById('answer-grid').children;
             let valid = false;
 
-            // Level 1 logic
+            // 第一關
             if (Game.tutorialStep === 1 && t && t.textContent.trim() === '希') valid = true;
             else if (Game.tutorialStep === 2 && z === towers[0].children[1]) valid = true;
             else if (Game.tutorialStep === 3 && t && t.textContent.trim() === '望') valid = true;
             else if (Game.tutorialStep === 4 && z === towers[0].children[2]) valid = true;
-            
             else if (Game.tutorialStep === 6 && t && t.textContent.trim() === '游') valid = true;
             else if (Game.tutorialStep === 7 && z === towers[2].children[1]) valid = true;
             else if (Game.tutorialStep === 8 && t && t.textContent.trim() === '泳') valid = true;
             else if (Game.tutorialStep === 9 && z === towers[2].children[2]) valid = true;
-            
             else if (Game.tutorialStep === 13 && t && t.textContent.trim() === '游') valid = true;
             else if (Game.tutorialStep === 14 && z === towers[1].children[1]) valid = true;
             else if (Game.tutorialStep === 15 && t && t.textContent.trim() === '泳') valid = true;
             else if (Game.tutorialStep === 16 && z === towers[1].children[2]) valid = true;
             else if (Game.tutorialStep === 17 && t && t.textContent.trim() === '池') valid = true;
             else if (Game.tutorialStep === 18 && z === towers[1].children[3]) valid = true;
-            
             else if (Game.tutorialStep === 19 && t && t.textContent.trim() === '吃') valid = true;
             else if (Game.tutorialStep === 20 && z === towers[2].children[1]) valid = true;
             else if (Game.tutorialStep === 21 && t && t.textContent.trim() === '飯') valid = true;
             else if (Game.tutorialStep === 22 && z === towers[2].children[2]) valid = true;
-            
             else if (Game.tutorialStep === 23) valid = true; 
 
-            // Level 2 logic
-            else if (Game.tutorialStep === 30) valid = true; 
+            // 第二關
+            else if (Game.tutorialStep === 30) valid = true;
             else if (Game.tutorialStep === 32 && t && t.textContent.trim() === '了') valid = true;
             else if (Game.tutorialStep === 33 && z === towers[0].children[1]) valid = true;
             else if (Game.tutorialStep === 34 && t && t.textContent.trim() === '解') valid = true;
             else if (Game.tutorialStep === 35 && z === towers[0].children[2]) valid = true;
-            
-            else if (Game.tutorialStep === 37) valid = true; 
+            else if (Game.tutorialStep === 37) valid = true;
             else if (Game.tutorialStep === 38 && t && t.textContent.trim() === '點') valid = true;
             else if (Game.tutorialStep === 39 && z === towers[1].children[1]) valid = true;
             else if (Game.tutorialStep === 40 && t && t.textContent.trim() === '選') valid = true;
             else if (Game.tutorialStep === 41 && z === towers[1].children[2]) valid = true;
-
             else if (Game.tutorialStep === 43 && t && t.textContent.trim() === '詢') valid = true;
             else if (Game.tutorialStep === 44 && z === towers[2].children[1]) valid = true;
             else if (Game.tutorialStep === 45 && t && t.textContent.trim() === '問') valid = true;
             else if (Game.tutorialStep === 46 && z === towers[2].children[2]) valid = true;
-            
-            else if (Game.tutorialStep === 47) valid = true; 
+            else if (Game.tutorialStep === 47) valid = true;
 
             if (!valid) return;
         }
@@ -875,19 +843,12 @@ scriptedHint(word) {
                 Game.selectedTile.classList.remove('selected'); Game.selectedTile = null; 
             }
         }
-
+        
         if (Game.tutorialStep > 0 && Game.tutorialStep < 47) {
             setTimeout(() => {
                 const next = Game.tutorialStep + 1;
-                const autoSteps = [
-                    1,2,3,4, 6,7,8,9, 
-                    13,14,15,16,17,18,19,20,21,22,
-                    32,33,34,35, 38,39,40,41, 43,44,45,46
-                ];
-                if (autoSteps.includes(Game.tutorialStep)) {
-                    Game.tutorialStep = next; 
-                    Game.updateTutorialUI();
-                }
+                const autoSteps = [1,2,3,4, 6,7,8,9, 13,14,15,16,17,18,19,20,21,22, 32,33,34,35, 38,39,40,41, 43,44,45,46];
+                if (autoSteps.includes(Game.tutorialStep)) { Game.tutorialStep = next; Game.updateTutorialUI(); }
             }, 50);
         }
     }
@@ -895,5 +856,3 @@ scriptedHint(word) {
 
 window.addEventListener('load', () => { setTimeout(() => { try { App.init(); } catch (e) { console.error(e); } }, 100); });
 document.addEventListener('click', Game.handleClick);
-
-
