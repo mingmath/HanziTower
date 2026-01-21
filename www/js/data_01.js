@@ -26,10 +26,10 @@
             } 
         },
         { 
-            id: 3, chars: "忍耐測試", sols: ["忍耐", "測試"], layout: [2, 2], details: {} 
+            id: 3, chars: "朝廷內亂字號門外漢辦公室", sols: ["朝廷", "門外漢", "內亂", "辦公室", "字號"], layout: [2, 3, 2, 3, 2], details: {} 
         },
         { 
-            id: 4, chars: "朝廷內亂字號門外漢辦公室", sols: ["朝廷", "門外漢", "內亂", "辦公室", "字號"], layout: [2, 3, 2, 3, 2], details: {} 
+            id: 4, chars: "忍耐測試", sols: ["忍耐", "測試"], layout: [2, 2], details: {} 
         },
         { 
             id: 5, chars: "物體搖擺沙畫運動員擺地攤", sols: ["物體", "運動員", "搖擺", "擺地攤", "沙畫"], layout: [2, 3, 2, 3, 2], details: {} 
@@ -57,3 +57,4 @@
     window.LevelCache[0] = levels;
 
 })();
+
