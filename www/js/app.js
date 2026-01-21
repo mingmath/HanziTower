@@ -214,10 +214,7 @@ const App = {
     isLoadingRealm: false,
 
     init() { 
-        // 這裡不需要再 Data.load()，因為 data_core.js 可能還沒載入完
-        // 直接檢查 Data 物件是否存在
         if (typeof Data === 'undefined') { 
-            // 如果 data_core.js 載入慢於 app.js，這裡做個簡單延遲重試
             setTimeout(() => App.init(), 100);
             return; 
         }
@@ -688,7 +685,7 @@ const Game = {
                         }
                     };
 
-                    // 每 4 關顯示插頁廣告
+                    // 每 4 關 (4, 8, 12...) 播放一次插頁廣告
                     if (this.currentLevelIdx > 0 && (this.currentLevelIdx + 1) % 4 === 0) {
                         AdController.showInterstitialAd(nextAction);
                     } else {
@@ -753,7 +750,6 @@ const Game = {
             const towers = document.getElementById('answer-grid').children;
             let valid = false;
 
-            // 第一關
             if (Game.tutorialStep === 1 && t && t.textContent.trim() === '希') valid = true;
             else if (Game.tutorialStep === 2 && z === towers[0].children[1]) valid = true;
             else if (Game.tutorialStep === 3 && t && t.textContent.trim() === '望') valid = true;
@@ -773,8 +769,6 @@ const Game = {
             else if (Game.tutorialStep === 21 && t && t.textContent.trim() === '飯') valid = true;
             else if (Game.tutorialStep === 22 && z === towers[2].children[2]) valid = true;
             else if (Game.tutorialStep === 23) valid = true; 
-
-            // 第二關
             else if (Game.tutorialStep === 30) valid = true;
             else if (Game.tutorialStep === 32 && t && t.textContent.trim() === '了') valid = true;
             else if (Game.tutorialStep === 33 && z === towers[0].children[1]) valid = true;
