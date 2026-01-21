@@ -270,6 +270,39 @@ const App = {
         document.getElementById('coin-text').textContent = Data.coins; 
         document.getElementById('key-text').textContent = Data.keys;
         document.getElementById('hint-count').textContent = Data.keys;
+
+        // 防呆邏輯：蠟燭 > 9 (即 10 根以上) 時
+        const isFull = Data.keys > 9;
+
+        // 1. 控制頂部小電視按鈕
+        const topAdBtn = document.getElementById('btn-ad');
+        if (topAdBtn) {
+            if (isFull) {
+                topAdBtn.style.opacity = '0.3';       // 變透明
+                topAdBtn.style.pointerEvents = 'none'; // 禁止點擊
+            } else {
+                topAdBtn.style.opacity = '1';
+                topAdBtn.style.pointerEvents = 'auto';
+            }
+        }
+
+        // 2. 控制商城內的播放按鈕
+        const shopAdBtn = document.getElementById('shop-btn-watch-ad');
+        if (shopAdBtn) {
+            if (isFull) {
+                shopAdBtn.textContent = "已滿";
+                shopAdBtn.classList.add('btn-disabled'); // 套用灰色樣式
+                shopAdBtn.classList.add('opacity-50');
+                shopAdBtn.classList.add('cursor-not-allowed');
+                shopAdBtn.disabled = true; // 真正的停用
+            } else {
+                shopAdBtn.textContent = "播放";
+                shopAdBtn.classList.remove('btn-disabled');
+                shopAdBtn.classList.remove('opacity-50');
+                shopAdBtn.classList.remove('cursor-not-allowed');
+                shopAdBtn.disabled = false;
+            }
+        }
     },
 
     bindEvents() {
@@ -295,6 +328,11 @@ const App = {
     },
 
     watchAd() {
+        // 如果蠟燭太多，直接阻擋
+        if (Data.keys > 9) {
+            return Modal.show("提示", "您的蠟燭已經很多了，\n請先使用一些再回來吧！");
+        }
+
         AdController.showRewardAd(() => {
             Data.keys += 1; Data.save(); this.updateUI(); 
             Modal.show("獎勵發送", "感謝觀看！獲得 1 根蠟燭 🕯️");
@@ -685,7 +723,7 @@ const Game = {
                         }
                     };
 
-                    // 每 4 關 (4, 8, 12...) 播放一次插頁廣告
+                    // 插頁廣告邏輯：每4關 (4, 8, 12...) 顯示一次
                     if (this.currentLevelIdx > 0 && (this.currentLevelIdx + 1) % 4 === 0) {
                         AdController.showInterstitialAd(nextAction);
                     } else {
@@ -750,40 +788,50 @@ const Game = {
             const towers = document.getElementById('answer-grid').children;
             let valid = false;
 
+            // Level 1 logic
             if (Game.tutorialStep === 1 && t && t.textContent.trim() === '希') valid = true;
             else if (Game.tutorialStep === 2 && z === towers[0].children[1]) valid = true;
             else if (Game.tutorialStep === 3 && t && t.textContent.trim() === '望') valid = true;
             else if (Game.tutorialStep === 4 && z === towers[0].children[2]) valid = true;
+            
             else if (Game.tutorialStep === 6 && t && t.textContent.trim() === '游') valid = true;
             else if (Game.tutorialStep === 7 && z === towers[2].children[1]) valid = true;
             else if (Game.tutorialStep === 8 && t && t.textContent.trim() === '泳') valid = true;
             else if (Game.tutorialStep === 9 && z === towers[2].children[2]) valid = true;
+            
             else if (Game.tutorialStep === 13 && t && t.textContent.trim() === '游') valid = true;
             else if (Game.tutorialStep === 14 && z === towers[1].children[1]) valid = true;
             else if (Game.tutorialStep === 15 && t && t.textContent.trim() === '泳') valid = true;
             else if (Game.tutorialStep === 16 && z === towers[1].children[2]) valid = true;
             else if (Game.tutorialStep === 17 && t && t.textContent.trim() === '池') valid = true;
             else if (Game.tutorialStep === 18 && z === towers[1].children[3]) valid = true;
+            
             else if (Game.tutorialStep === 19 && t && t.textContent.trim() === '吃') valid = true;
             else if (Game.tutorialStep === 20 && z === towers[2].children[1]) valid = true;
             else if (Game.tutorialStep === 21 && t && t.textContent.trim() === '飯') valid = true;
             else if (Game.tutorialStep === 22 && z === towers[2].children[2]) valid = true;
+            
             else if (Game.tutorialStep === 23) valid = true; 
-            else if (Game.tutorialStep === 30) valid = true;
+
+            // Level 2 logic
+            else if (Game.tutorialStep === 30) valid = true; 
             else if (Game.tutorialStep === 32 && t && t.textContent.trim() === '了') valid = true;
             else if (Game.tutorialStep === 33 && z === towers[0].children[1]) valid = true;
             else if (Game.tutorialStep === 34 && t && t.textContent.trim() === '解') valid = true;
             else if (Game.tutorialStep === 35 && z === towers[0].children[2]) valid = true;
-            else if (Game.tutorialStep === 37) valid = true;
+            
+            else if (Game.tutorialStep === 37) valid = true; 
             else if (Game.tutorialStep === 38 && t && t.textContent.trim() === '點') valid = true;
             else if (Game.tutorialStep === 39 && z === towers[1].children[1]) valid = true;
             else if (Game.tutorialStep === 40 && t && t.textContent.trim() === '選') valid = true;
             else if (Game.tutorialStep === 41 && z === towers[1].children[2]) valid = true;
+
             else if (Game.tutorialStep === 43 && t && t.textContent.trim() === '詢') valid = true;
             else if (Game.tutorialStep === 44 && z === towers[2].children[1]) valid = true;
             else if (Game.tutorialStep === 45 && t && t.textContent.trim() === '問') valid = true;
             else if (Game.tutorialStep === 46 && z === towers[2].children[2]) valid = true;
-            else if (Game.tutorialStep === 47) valid = true;
+            
+            else if (Game.tutorialStep === 47) valid = true; 
 
             if (!valid) return;
         }
@@ -807,12 +855,19 @@ const Game = {
                 Game.selectedTile.classList.remove('selected'); Game.selectedTile = null; 
             }
         }
-        
+
         if (Game.tutorialStep > 0 && Game.tutorialStep < 47) {
             setTimeout(() => {
                 const next = Game.tutorialStep + 1;
-                const autoSteps = [1,2,3,4, 6,7,8,9, 13,14,15,16,17,18,19,20,21,22, 32,33,34,35, 38,39,40,41, 43,44,45,46];
-                if (autoSteps.includes(Game.tutorialStep)) { Game.tutorialStep = next; Game.updateTutorialUI(); }
+                const autoSteps = [
+                    1,2,3,4, 6,7,8,9, 
+                    13,14,15,16,17,18,19,20,21,22,
+                    32,33,34,35, 38,39,40,41, 43,44,45,46
+                ];
+                if (autoSteps.includes(Game.tutorialStep)) {
+                    Game.tutorialStep = next; 
+                    Game.updateTutorialUI();
+                }
             }, 50);
         }
     }
