@@ -194,16 +194,18 @@
 
     <div id="tutorial-mask" style="display:none;"></div>
     
-    <!-- 核心邏輯 (請注意順序) -->
-    <script src="js/data_core.js"></script>
-    <script src="js/app.js"></script>
-<!-- 廣告 Loading 遮罩 -->
+    <!-- 修正位置：將 Loading 遮罩移到腳本載入之前 -->
     <div id="ad-loading-overlay" style="display:none;">
         <div class="ad-spinner"></div>
         <p class="ad-loading-text">廣告準備中...</p>
     </div>
+    
+    <!-- 核心邏輯 (請注意順序) -->
+    <script src="js/data_core.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>
+
 
 
 
