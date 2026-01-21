@@ -20,6 +20,7 @@ const AdController = {
 
     beforeAd() {
         const audio = document.getElementById('bg-music');
+        // 安全檢查：只有當 audio 存在時才操作
         if (audio && !audio.paused) {
             wasMusicPlaying = true;
             audio.pause();
@@ -31,6 +32,7 @@ const AdController = {
 
     afterAd() {
         const audio = document.getElementById('bg-music');
+        // 安全檢查：只有當 audio 存在且原本有播放時才恢復
         if (wasMusicPlaying && audio) {
             audio.play().catch(()=>{});
         }
@@ -56,9 +58,8 @@ const AdController = {
         });
     },
 
-    // --- [修正重點] 插頁廣告 (過關使用) ---
+    // 呼叫插頁廣告 (過關使用)
     showInterstitialAd(nextAction) {
-        // 如果 SDK 沒載入，直接下一關
         if (typeof adBreak !== 'function') {
             if(nextAction) nextAction();
             return;
@@ -67,12 +68,10 @@ const AdController = {
         adBreak({
             type: 'next',
             name: 'level_complete',
-            beforeAd: AdController.beforeAd, // 暫停音樂
-            afterAd: AdController.afterAd,   // 恢復音樂
-            // 修正關鍵：改用 adBreakDone
-            // 這個函式保證無論有無廣告，最終都會被呼叫
+            beforeAd: AdController.beforeAd,
+            afterAd: AdController.afterAd,
             adBreakDone: () => {
-                console.log("Ad break done, proceeding to next level.");
+                // 確保無論有無廣告都會執行下一步
                 if(nextAction) nextAction();
             }
         });
@@ -159,7 +158,6 @@ const App = {
         
         this.currentViewRealm = Math.floor(Data.unlockedLevel / 100);
         
-        // 初始化時，先載入當前國度的資料
         this.ensureRealmLoaded(this.currentViewRealm, () => {
             this.updateUI(); 
             this.bindEvents(); 
@@ -167,7 +165,6 @@ const App = {
         });
     },
 
-    // 動態載入國度資料
     ensureRealmLoaded(realmIdx, callback) {
         if (window.LevelCache && window.LevelCache[realmIdx]) {
             if (callback) callback();
@@ -214,7 +211,11 @@ const App = {
         const bind = (id, action) => { const el = document.getElementById(id); if (el) el.onclick = action; };
         bind('btn-start', () => {
             this.showLevels();
-            if (Data.musicOn) { document.getElementById('bg-music').play().catch(()=>{}); }
+            // 安全檢查：只有當 audio 存在時才播放
+            const audio = document.getElementById('bg-music');
+            if (Data.musicOn && audio) { 
+                audio.play().catch(()=>{}); 
+            }
         });
         bind('btn-daily', () => this.dailyCheckIn());
         bind('btn-notebook', () => this.showNotebook());
@@ -378,6 +379,7 @@ const Game = {
                 clearBtn.onclick = (e) => {
                     e.stopPropagation();
                     if (Game.tutorialStep > 0 && idx === 0 && Game.tutorialStep !== 11) return; 
+                    
                     if (Game.tutorialStep === 11 && idx === 0) {
                         const towerIndex = Array.from(grid.children).indexOf(row);
                         if (towerIndex !== 2) return; 
@@ -456,55 +458,109 @@ const Game = {
 
         try {
             switch(this.tutorialStep) {
-                // 第一關
+                // 第一關教學：基礎操作
                 case 1: target = pool.find(t => t.textContent.trim() === '希'); break;
                 case 2: target = towers[0].children[1]; break; 
                 case 3: target = pool.find(t => t.textContent.trim() === '望'); break;
                 case 4: target = towers[0].children[2]; break; 
-                case 5: NPC.say("很好！接下來試試右邊的塔。", "繼續", () => { this.tutorialStep = 6; this.updateTutorialUI(); }); break;
+                
+                case 5:
+                    NPC.say("很好！接下來試試右邊的塔。\n有時候我們可能會眼花看錯...", "繼續", () => {
+                        this.tutorialStep = 6; this.updateTutorialUI();
+                    }); break;
+                
                 case 6: target = pool.find(t => t.textContent.trim() === '游'); break;
                 case 7: target = towers[2].children[1]; break; 
                 case 8: target = pool.find(t => t.textContent.trim() === '泳'); break;
                 case 9: target = towers[2].children[2]; break; 
-                case 10: NPC.say("哎呀，這座塔只有兩層，但「游泳池」需要三個字。\n請點擊「紅色叉叉」拆掉重蓋！", "好", () => { this.tutorialStep = 11; this.updateTutorialUI(); }); break;
+                
+                case 10:
+                    NPC.say("哎呀，這座塔只有兩層，但「游泳池」需要三個字。\n請點擊「紅色叉叉」拆掉重蓋！", "好", () => {
+                        this.tutorialStep = 11; this.updateTutorialUI();
+                    }); break;
+                
                 case 11: 
                     const btn = towers[2].querySelector('.tower-clear-btn');
-                    if(btn) target = btn; break;
-                case 12: NPC.say("現在你知道方法了，請完成剩下的詞語吧！", "開始", () => { this.tutorialStep = 13; this.updateTutorialUI(); }); break;
+                    if(btn) target = btn;
+                    break;
+                
+                case 12:
+                    NPC.say("現在你知道方法了，請將剩下的詞語完成吧！\n(游泳池、吃飯)", "開始", () => {
+                        this.tutorialStep = 13; this.updateTutorialUI();
+                    }); break;
+                
                 case 13: target = pool.find(t => t.textContent.trim() === '游'); break;
                 case 14: target = towers[1].children[1]; break; 
                 case 15: target = pool.find(t => t.textContent.trim() === '泳'); break;
                 case 16: target = towers[1].children[2]; break; 
                 case 17: target = pool.find(t => t.textContent.trim() === '池'); break;
                 case 18: target = towers[1].children[3]; break; 
+
                 case 19: target = pool.find(t => t.textContent.trim() === '吃'); break;
                 case 20: target = towers[2].children[1]; break; 
                 case 21: target = pool.find(t => t.textContent.trim() === '飯'); break;
                 case 22: target = towers[2].children[2]; break; 
+
                 case 23: target = document.getElementById('btn-check'); break;
-                // 結算
-                case 24: setTimeout(() => { target = document.querySelector('#modal-actions button:first-child'); if(target) this.highlightElement(target); }, 300); return;
-                case 25: setTimeout(() => { target = document.querySelector('.heart-btn'); if(target) this.highlightElement(target); }, 300); return;
-                case 26: setTimeout(() => { target = document.querySelector('#modal-actions button'); if(target) this.highlightElement(target); }, 300); return;
-                case 27: setTimeout(() => { target = document.querySelector('#modal-actions button:last-child'); if(target) this.highlightElement(target); }, 300); return;
-                // 第二關
+
+                // 勝利畫面引導
+                case 24: 
+                    setTimeout(() => {
+                        target = document.querySelector('#modal-actions button:first-child'); 
+                        if(target) this.highlightElement(target);
+                    }, 300); return;
+                
+                case 25: 
+                    setTimeout(() => {
+                        target = document.querySelector('.heart-btn'); 
+                        if(target) this.highlightElement(target);
+                    }, 300); return;
+
+                case 26: 
+                    setTimeout(() => {
+                        target = document.querySelector('#modal-actions button'); 
+                        if(target) this.highlightElement(target);
+                    }, 300); return;
+
+                case 27: 
+                    setTimeout(() => {
+                        target = document.querySelector('#modal-actions button:last-child'); 
+                        if(target) this.highlightElement(target);
+                    }, 300); return;
+
+                // 第二關教學
                 case 30: target = document.getElementById('btn-hint'); break;
-                case 31: NPC.say("瞧！我告訴你第一個詞是「了解」。\n請試著填入吧！", "沒問題", () => { this.tutorialStep = 32; this.updateTutorialUI(); }); break;
+                case 31: 
+                    NPC.say("瞧！我告訴你第一個詞是「了解」。\n請試著填入吧！", "沒問題", () => {
+                        this.tutorialStep = 32; this.updateTutorialUI();
+                    }); break;
+                
                 case 32: target = pool.find(t => t.textContent.trim() === '了'); break;
                 case 33: target = towers[0].children[1]; break; 
                 case 34: target = pool.find(t => t.textContent.trim() === '解'); break;
                 case 35: target = towers[0].children[2]; break; 
-                case 36: NPC.say("很好！讓我們再用一次提示。", "好", () => { this.tutorialStep = 37; this.updateTutorialUI(); }); break;
+
+                case 36: 
+                    NPC.say("很好！讓我們再用一次提示。", "好", () => {
+                        this.tutorialStep = 37; this.updateTutorialUI();
+                    }); break;
                 case 37: target = document.getElementById('btn-hint'); break;
+
                 case 38: target = pool.find(t => t.textContent.trim() === '點'); break;
                 case 39: target = towers[1].children[1]; break;
                 case 40: target = pool.find(t => t.textContent.trim() === '選'); break;
                 case 41: target = towers[1].children[2]; break;
-                case 42: NPC.say("顯然最後剩下的就是「詢問」了！\n把它完成吧。", "沒問題", () => { this.tutorialStep = 43; this.updateTutorialUI(); }); break;
+
+                case 42:
+                    NPC.say("顯然最後剩下的就是「詢問」了！\n把它完成吧。", "沒問題", () => {
+                        this.tutorialStep = 43; this.updateTutorialUI();
+                    }); break;
+
                 case 43: target = pool.find(t => t.textContent.trim() === '詢'); break;
                 case 44: target = towers[2].children[1]; break;
                 case 45: target = pool.find(t => t.textContent.trim() === '問'); break;
                 case 46: target = towers[2].children[2]; break;
+
                 case 47: target = document.getElementById('btn-check'); break;
             }
         } catch(e) { console.warn("Tutorial Error:", e); }
@@ -685,7 +741,7 @@ const Game = {
             const towers = document.getElementById('answer-grid').children;
             let valid = false;
 
-            // Level 1 logic
+            // 第一關
             if (Game.tutorialStep === 1 && t && t.textContent.trim() === '希') valid = true;
             else if (Game.tutorialStep === 2 && z === towers[0].children[1]) valid = true;
             else if (Game.tutorialStep === 3 && t && t.textContent.trim() === '望') valid = true;
@@ -706,7 +762,7 @@ const Game = {
             else if (Game.tutorialStep === 22 && z === towers[2].children[2]) valid = true;
             else if (Game.tutorialStep === 23) valid = true; 
 
-            // Level 2 logic
+            // 第二關
             else if (Game.tutorialStep === 30) valid = true;
             else if (Game.tutorialStep === 32 && t && t.textContent.trim() === '了') valid = true;
             else if (Game.tutorialStep === 33 && z === towers[0].children[1]) valid = true;
@@ -746,7 +802,7 @@ const Game = {
             }
         }
         
-        // 自動推進
+        // 自動推進教學
         if (Game.tutorialStep > 0 && Game.tutorialStep < 47) {
             setTimeout(() => {
                 const next = Game.tutorialStep + 1;
