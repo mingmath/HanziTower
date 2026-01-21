@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>字塔 Hanzi Tower</title>
     
-    <!-- Google H5 Games Ads SDK (測試模式開啟中) -->
-    <!-- 正式通過審核後，請移除 data-ad-break-test="on" -->
+    <!-- Google H5 Games Ads SDK -->
     <script async
         data-ad-client="ca-pub-4655366880404164"
         data-ad-type="h5-games"
@@ -14,14 +13,10 @@
         src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js">
     </script>
     
-    <!-- 廣告初始化參數 -->
     <script>
         window.adsbygoogle = window.adsbygoogle || [];
         var adBreak = function(o) {adsbygoogle.push(o);}
-        adsbygoogle.push({
-            sound: 'on', 
-            preloadAdBreaks: 'on', 
-        });
+        adsbygoogle.push({ sound: 'on', preloadAdBreaks: 'on' });
     </script>
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -30,55 +25,39 @@
     
     <style>
         .custom-icon { width: 24px; height: 24px; object-fit: contain; display: inline-block; vertical-align: middle; }
-        .res-icon { width: 20px; height: 20px; object-fit: contain; margin-right: 4px; vertical-align: text-bottom; }
-        
-        /* 樣式補強 (主要樣式在 style.css) */
-        #tutorial-mask { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.7); z-index: 2000; display: none; pointer-events: auto; }
-        .tutorial-highlight { position: relative !important; z-index: 4000 !important; box-shadow: 0 0 20px 10px rgba(255, 255, 255, 0.8) !important; transform: scale(1.1) translateZ(0); transition: all 0.3s ease; pointer-events: auto !important; }
-        .char-tile.tutorial-highlight, .drop-zone.tutorial-highlight { background-color: white !important; border: 2px solid #ef4444 !important; }
-        .tower-clear-btn { position: absolute; top: -12px; right: -12px; width: 28px; height: 28px; background-color: #ef4444; color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 18px; font-weight: bold; line-height: 1; z-index: 150; box-shadow: 0 2px 5px rgba(0,0,0,0.3); border: 2px solid white; transition: transform 0.2s; }
-        .tower-clear-btn:active { transform: scale(0.9); background-color: #dc2626; }
-        .tower-clear-btn.tutorial-highlight { position: absolute !important; top: -12px !important; right: -12px !important; background-color: #ef4444 !important; color: white !important; box-shadow: 0 0 20px 5px rgba(239, 68, 68, 0.8) !important; transform: scale(1.2) translateZ(0) !important; z-index: 4000 !important; }
-        .heart-btn.tutorial-highlight { background-color: transparent !important; box-shadow: 0 0 15px 5px rgba(255, 255, 0, 0.8) !important; transform: scale(1.5) !important; z-index: 4000 !important; }
-        
-        /* 提示紅點相關 (保留備用) */
-        .red-circle-mark { position: relative; border: 4px solid #ef4444 !important; border-radius: 8px !important; box-shadow: 0 0 15px rgba(239, 68, 68, 0.6); z-index: 1900 !important; background-color: #fff1f2 !important; }
-        .hint-float-label { position: absolute; top: -45px; left: 50%; transform: translateX(-50%); background: #b91c1c; color: white; padding: 6px 10px; border-radius: 6px; font-size: 14px; font-weight: bold; white-space: nowrap; z-index: 2005; box-shadow: 0 4px 6px rgba(0,0,0,0.2); animation: bounce 1s infinite alternate; }
-        .hint-float-label::after { content: ''; position: absolute; bottom: -6px; left: 50%; margin-left: -6px; border-width: 6px 6px 0; border-style: solid; border-color: #b91c1c transparent transparent transparent; }
-        @keyframes bounce { from{transform:translate(-50%, 0);} to{transform:translate(-50%, -5px);} }
     </style>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
     <div id="error-console" style="display:none; position:fixed; bottom:0; left:0; background:red; color:white; padding:10px; z-index:9999;"></div>
-    
-    <!-- 音樂元件 (保留 ID 以供 JS 控制，src 留空避免 404，或填入有效路徑) -->
     <audio id="bg-music" loop></audio>
+
+    <!-- 特效層 (彩帶) -->
+    <div id="confetti-container"></div>
 
     <!-- 頂部導航 -->
     <div class="top-bar">
-        <div class="top-left">
-            <div class="res-badge bg-stone-100"><span>🏆</span> <span id="level-text">Lv.1</span></div>
+        <!-- 等級顯示 -->
+        <div class="level-badge" id="level-display">
+            <span class="level-icon">🏅</span>
+            <div class="level-info">
+                <span id="lvl-num">1等</span>
+                <span id="lvl-progress" class="text-xs">0/27</span>
+            </div>
         </div>
-        <div class="top-right">
-            <!-- 筆記按鈕 -->
+
+        <div class="top-actions">
+            <button class="icon-btn" id="btn-top-home" title="首頁"><span class="text-xl">🏠</span></button>
+            <button class="icon-btn" id="btn-top-mission" title="每日任務">
+                <span class="text-xl">📜</span>
+                <div id="mission-dot" class="red-dot" style="display:none;"></div>
+            </button>
             <button class="icon-btn" id="btn-top-notebook" title="筆記">
                 <img src="images/note.png" alt="筆記" class="custom-icon" onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('beforeend','📖')">
             </button>
-            
-            <!-- 商城/補給站按鈕 -->
-            <button class="icon-btn" id="btn-shop" title="資源補給">
-                <img src="images/shop.png" alt="商城" class="custom-icon" onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('beforeend','🎁')">
+            <button class="icon-btn" id="btn-top-shop" title="商城">
+                <img src="images/shop.png" alt="商城" class="custom-icon" onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('beforeend','🛒')">
             </button>
-            
-            <!-- 金幣欄位 -->
-            <div class="res-badge">
-                <img src="images/coin.png" alt="金幣" class="res-icon" onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('beforeend','🪙')">
-                <span id="coin-text">0</span>
-            </div>
-            
-            <!-- 蠟燭欄位 (整合廣告按鈕) -->
-            <div class="res-badge"><span>🕯️</span> <span id="key-text">0</span><button id="btn-ad" class="ad-btn">📺</button></div>
         </div>
     </div>
 
@@ -92,7 +71,7 @@
             <button id="btn-daily" class="btn-secondary text-lg">📅 簽到領蠟燭</button>
             <button id="btn-notebook" class="btn-secondary text-lg bg-stone-100">📖 詞語筆記</button>
         </div>
-        <p class="absolute bottom-5 text-stone-400 text-xs">Ver 4.9 UI Update</p>
+        <p class="absolute bottom-5 text-stone-400 text-xs">Ver 5.1 Celebration Update</p>
     </div>
 
     <!-- 關卡選單 -->
@@ -116,35 +95,26 @@
     <div id="view-game" class="view">
         <div class="game-top-section w-full max-w-2xl flex flex-col items-center flex-grow">
             <div class="w-full flex justify-between items-center mb-2 px-2">
-                <button id="btn-stop-game" class="text-stone-400 text-3xl hover:text-stone-600">×</button>
-                
-                <!-- 標題卷軸 -->
+                <div style="width: 30px;"></div>
                 <div class="scroll-header">
                     <div class="scroll-stick left"></div>
                     <div class="scroll-content" id="current-level-title">第一關</div>
                     <div class="scroll-stick right"></div>
                 </div>
-                
-                <!-- 右側佔位符 (移除舊的提示按鈕) -->
                 <div style="width: 30px;"></div>
             </div>
             
-            <!-- 提示訊息顯示區 (CSS 已設為 fixed 中央懸浮) -->
             <div id="hint-result-area"></div>
-
             <div id="answer-grid" class="towers-wrapper"></div>
         </div>
         
         <div class="game-bottom-section w-full max-w-lg">
             <div class="w-full border-t-2 border-stone-300 mb-3"></div>
             <div id="character-pool" class="grid-box"></div>
-            
             <div class="flex gap-4 w-full mt-4 mb-2 px-4">
-                <!-- 修改：左下角改為提示按鈕 -->
                 <button id="btn-hint-bottom" class="flex-1 bg-amber-500 text-white py-3 rounded font-bold shadow-md flex justify-center items-center gap-2 text-lg active:scale-95 transition-transform">
                     <span>💡</span> 提示 (<span id="btn-hint-count">0</span>)
                 </button>
-                
                 <button id="btn-check" class="flex-1 btn-primary text-lg shadow-md">修築完成</button>
             </div>
         </div>
@@ -160,63 +130,29 @@
         <div id="notebook-list" class="w-full max-w-md flex flex-col gap-3 pb-10"></div>
     </div>
 
-    <!-- Modals -->
-    <div id="modal" class="modal-mask"><div class="modal-body"><div id="modal-icon" class="text-5xl mb-4 text-stone-700">📜</div><h3 id="modal-title" class="text-xl font-bold mb-3 text-stone-900 tracking-widest">標題</h3><p id="modal-msg" class="text-stone-600 mb-8 text-base leading-relaxed whitespace-pre-wrap">內容</p><div id="modal-actions" class="flex justify-center gap-2"></div></div></div>
+    <!-- 通用 Modals -->
+    <div id="modal" class="modal-mask"><div id="modal-content" class="modal-body"><div id="modal-icon" class="text-5xl mb-4 text-stone-700">📜</div><h3 id="modal-title" class="text-xl font-bold mb-3 text-stone-900 tracking-widest">標題</h3><div id="modal-msg" class="text-stone-600 mb-8 text-base leading-relaxed whitespace-pre-wrap">內容</div><div id="modal-actions" class="flex justify-center gap-2"></div></div></div>
     
-    <!-- 資源補給站 Modal -->
-    <div id="shop-modal" class="modal-mask">
-        <div class="modal-body">
-            <span class="close-modal" onclick="document.getElementById('shop-modal').style.display='none'">×</span>
-            <h3 class="text-xl font-bold mb-4 text-center text-stone-900 tracking-widest">資源補給</h3>
-            
-            <div class="flex flex-col gap-3 mb-4">
-                <!-- 每日簽到區塊 -->
-                <div class="border p-3 rounded flex justify-between items-center bg-stone-50">
-                    <div class="text-left">
-                        <div class="font-bold text-stone-800">每日補給</div>
-                        <div class="text-xs text-stone-500">每天一次</div>
-                    </div>
-                    <div class="text-xl font-bold text-amber-600">🕯️ +1</div>
-                    <button id="shop-btn-daily" class="bg-stone-800 text-white px-3 py-1 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed" onclick="App.dailyCheckIn()">領取</button>
-                </div>
-    
-                <!-- 廣告獲取區塊 -->
-                <div class="border p-3 rounded flex justify-between items-center bg-stone-50">
-                    <div class="text-left">
-                        <div class="font-bold text-stone-800">看廣告</div>
-                        <div class="text-xs text-stone-500">支持作者</div>
-                    </div>
-                    <div class="text-xl font-bold text-amber-600">🕯️ +1</div>
-                    <button id="shop-btn-watch-ad" class="bg-stone-800 text-white px-3 py-1 rounded text-sm" onclick="App.watchAd()">播放</button>
-                </div>
-            </div>
-            <p class="text-xs text-stone-400">目前僅開放免費獲取途徑</p>
-        </div>
-    </div>
+    <!-- 回首頁確認 -->
+    <div id="modal-home-confirm" class="modal-mask"><div class="modal-body"><div class="text-5xl mb-4">🏠</div><h3 class="text-xl font-bold mb-3">暫停修築</h3><p class="text-stone-600 mb-6">要回到首頁嗎？<br>目前的進度將不會保存。</p><div class="flex gap-3"><button class="flex-1 btn-secondary" onclick="document.getElementById('modal-home-confirm').style.display='none'">繼續遊玩</button><button class="flex-1 btn-primary" onclick="App.confirmBackToHome()">回到首頁</button></div></div></div>
 
-    <!-- NPC Modal -->
-    <div id="npc-modal" class="npc-container" style="display:none;">
-        <div class="npc-wrapper">
-            <div class="npc-image-box">
-                <img src="images/npc.png" alt="NPC" class="npc-img" onerror="this.style.display='none';this.parentElement.innerHTML='👴'">
-            </div>
-            <div class="npc-dialog-box">
-                <div class="npc-name">守護者</div>
-                <p id="npc-text" class="npc-text">...</p>
-                <button id="npc-btn" class="npc-action-btn">好</button>
-            </div>
-        </div>
-    </div>
+    <!-- 每日任務 -->
+    <div id="modal-mission" class="modal-mask"><div class="modal-body" style="max-width: 360px;"><span class="close-modal" onclick="document.getElementById('modal-mission').style.display='none'">×</span><h3 class="text-xl font-bold mb-1 text-center text-stone-900 tracking-widest">每日任務</h3><p class="text-center text-xs text-stone-500 mb-4">今日已完成新關卡：<span id="mission-progress-text" class="text-red-600 font-bold">0</span> 關</p><div class="flex flex-col gap-3" id="mission-list"></div></div></div>
+
+    <!-- 商城 -->
+    <div id="shop-modal" class="modal-mask"><div class="modal-body"><span class="close-modal" onclick="document.getElementById('shop-modal').style.display='none'">×</span><h3 class="text-xl font-bold mb-2 text-center text-stone-900 tracking-widest">幸運轉盤</h3><div class="bg-stone-100 p-2 rounded mb-4 flex justify-between items-center"><span>持有元寶：</span><span class="text-xl font-bold text-amber-600">🪙 <span id="shop-coin-text">0</span></span></div><div class="wheel-container mb-4 relative mx-auto" style="width:200px; height:200px;"><div id="wheel" class="wheel"><div class="wheel-text">?</div></div><div class="wheel-pointer">▼</div></div><button id="btn-spin" class="btn-primary w-full mb-4" onclick="App.spinWheel()">花費 50 🪙 抽獎</button><div class="border-t border-dashed border-stone-300 my-3"></div><div class="flex flex-col gap-2"><div class="flex justify-between items-center text-sm"><span>每日補給 (🕯️+1)</span><button id="shop-btn-daily" class="bg-stone-800 text-white px-3 py-1 rounded" onclick="App.dailyCheckIn()">領取</button></div><div class="flex justify-between items-center text-sm"><span>看廣告 (🕯️+1)</span><button id="shop-btn-watch-ad" class="bg-stone-800 text-white px-3 py-1 rounded" onclick="App.watchAd()">播放</button></div></div></div></div>
+
+    <!-- NPC -->
+    <div id="npc-modal" class="npc-container" style="display:none;"><div class="npc-wrapper"><div class="npc-image-box"><img src="images/npc.png" alt="NPC" class="npc-img" onerror="this.style.display='none';this.parentElement.innerHTML='👴'"></div><div class="npc-dialog-box"><div class="npc-name">守護者</div><p id="npc-text" class="npc-text">...</p><button id="npc-btn" class="npc-action-btn">好</button></div></div></div>
 
     <div id="tutorial-mask" style="display:none;"></div>
     
-    <!-- 廣告 Loading 遮罩 (放在腳本前) -->
+    <!-- Loading -->
     <div id="ad-loading-overlay" style="display:none;">
         <div class="ad-spinner"></div>
         <p class="ad-loading-text">廣告準備中...</p>
     </div>
     
-    <!-- 核心邏輯 -->
     <script src="js/data_core.js"></script>
     <script src="js/app.js"></script>
 </body>
