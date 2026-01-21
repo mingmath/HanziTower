@@ -320,6 +320,7 @@ const App = {
         bind('btn-top-notebook', () => this.showNotebook());
         bind('btn-back-home', () => this.switchView('view-home'));
         bind('btn-stop-game', () => this.showLevels());
+        bind('btn-hint-bottom', () => Game.useHint());
         bind('btn-check', () => Game.checkAnswer());
         bind('btn-back-note', () => this.switchView('view-home'));
         bind('btn-shop', () => document.getElementById('shop-modal').style.display = 'flex');
@@ -894,4 +895,5 @@ scriptedHint(word) {
 
 window.addEventListener('load', () => { setTimeout(() => { try { App.init(); } catch (e) { console.error(e); } }, 100); });
 document.addEventListener('click', Game.handleClick);
+
 
