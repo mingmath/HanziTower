@@ -50,8 +50,14 @@ const AdController = {
             type: 'reward', name: 'get_candle',
             beforeAd: AdController.beforeAd, afterAd: AdController.afterAd,
             beforeReward: (showAdFn) => { showAdFn(); },
-            adDismissed: () => { AdController.hideLoading(); Modal.show("提示", "必須看完廣告才能獲得獎勵！"); },
-            adViewed: () => { AdController.hideLoading(); if (onSuccess) onSuccess(); }
+            adDismissed: () => { 
+                AdController.hideLoading();
+                Modal.show("提示", "必須看完廣告才能獲得獎勵！"); 
+            },
+            adViewed: () => { 
+                AdController.hideLoading();
+                if (onSuccess) onSuccess(); 
+            }
         });
         setTimeout(() => { if (!AdController.isAdActive) AdController.hideLoading(); }, 3000);
     },
@@ -78,7 +84,7 @@ const AdController = {
 };
 AdController.init();
 
-// --- 特效系統 (彩帶) ---
+// --- 特效系統 ---
 const ConfettiSystem = {
     spawn() {
         const container = document.getElementById('confetti-container');
@@ -103,7 +109,10 @@ const Modal = {
     openBase(title, content, icon) {
         const t = this.safeGet('modal-title'); if(t) t.textContent = title;
         const m = this.safeGet('modal-msg');
-        if(m) { m.innerHTML = ''; if (content instanceof Node) m.appendChild(content); else m.innerHTML = content; }
+        if(m) {
+            m.innerHTML = '';
+            if (content instanceof Node) m.appendChild(content); else m.innerHTML = content;
+        }
         const i = this.safeGet('modal-icon'); if(i) i.textContent = icon;
         const body = this.safeGet('modal-content'); if(body) body.className = 'modal-body';
         const modal = this.safeGet('modal'); if(modal) modal.style.display = 'flex';
@@ -163,10 +172,14 @@ const App = {
     isLoadingRealm: false,
 
     init() { 
-        if (typeof Data === 'undefined') { setTimeout(() => App.init(), 100); return; }
+        if (typeof Data === 'undefined') { 
+            setTimeout(() => App.init(), 100);
+            return; 
+        }
         Data.load(); 
-        this.dailyResetCheck();
+        this.dailyResetCheck(); 
         this.currentViewRealm = Math.floor(Data.unlockedLevel / 100);
+        
         this.ensureRealmLoaded(this.currentViewRealm, () => {
             this.updateUI(); 
             this.bindEvents(); 
@@ -202,7 +215,7 @@ const App = {
         
         if (leveledUp) {
             Data.save();
-            ConfettiSystem.spawn();
+            ConfettiSystem.spawn(); 
             Modal.showLevelUp("等級提升！", `恭喜升到 ${Data.playerLevel} 等！\n獲得 5 根蠟燭！`);
             Data.keys += 5;
         }
@@ -230,8 +243,8 @@ const App = {
 
     updateUI() { 
         const setText = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
-        setText('coin-text', Data.coins); // 舊版相容
-        setText('key-text', Data.keys);   // 舊版相容
+        setText('coin-text', Data.coins);
+        setText('key-text', Data.keys);
         setText('btn-hint-count', Data.keys);
         setText('shop-coin-text', Data.coins);
 
@@ -274,15 +287,14 @@ const App = {
         bind('btn-reset', () => Game.resetLevel());
         bind('btn-check', () => Game.checkAnswer());
         bind('btn-back-note', () => this.switchView('view-home'));
-        
         bind('btn-hint-bottom', () => Game.useHint());
         bind('btn-top-home', () => this.backToHomeConfirm());
         bind('btn-top-mission', () => this.showMissions());
         bind('btn-top-shop', () => { const el=document.getElementById('shop-modal'); if(el) el.style.display='flex'; });
         bind('btn-top-notebook', () => this.showNotebook());
-        
         bind('shop-btn-daily', () => this.dailyCheckIn());
         bind('shop-btn-watch-ad', () => this.watchAd());
+        bind('btn-ad', () => this.watchAd());
     },
 
     backToHomeConfirm() {
@@ -457,6 +469,7 @@ const Game = {
                 clearBtn.className = 'tower-clear-btn'; clearBtn.textContent = '×';
                 clearBtn.onclick = (e) => {
                     e.stopPropagation();
+                    // 教學防呆
                     if (Game.tutorialStep > 0 && idx === 0 && Game.tutorialStep !== 11) return; 
                     if (Game.tutorialStep === 11 && idx === 0) {
                         const towerIndex = Array.from(grid.children).indexOf(row);
@@ -486,13 +499,13 @@ const Game = {
         this.clearTutorialHighlights();
         App.switchView('view-game');
 
-        if (idx === 0) { setTimeout(() => { NPC.say("歡迎來到漢字的國度！...", "好", () => { this.tutorialStep = 1; this.updateTutorialUI(); }); }, 500); } 
-        else if (idx === 1 && Data.keys < 100) { setTimeout(() => { NPC.say("卡關了怎麼辦？", "怎麼辦", () => { NPC.say("這回合免費使用提示！", "試試看", () => { this.tutorialStep = 30; this.updateTutorialUI(); }); }); }, 500); }
+        if (idx === 0) { setTimeout(() => { NPC.say("歡迎來到漢字的國度！我是這裡的守護者。\n請協助將崩塌的「字塔」復原。", "好", () => { this.tutorialStep = 1; this.updateTutorialUI(); }); }, 500); } 
+        else if (idx === 1 && Data.keys < 100) { setTimeout(() => { NPC.say("隨著旅程前進，字會越來越多。\n如果卡關了怎麼辦呢？", "怎麼辦", () => { NPC.say("別擔心，這回合特別讓你\n「免費」使用提示！", "試試看", () => { this.tutorialStep = 30; this.updateTutorialUI(); }); }); }, 500); }
     },
     updateHintButton() {
         const btn = document.getElementById('btn-hint-bottom'); if (!btn) return;
         const lvl = this.getLevelData(this.currentLevelIdx);
-        if (!lvl || this.hintIndex >= lvl.sols.length) { btn.classList.add('btn-disabled'); btn.style.opacity = '0.5'; } else { btn.classList.remove('btn-disabled'); btn.style.opacity = '1'; }
+        if (!lvl || this.hintIndex >= lvl.sols.length) { btn.classList.add('btn-disabled'); btn.style.opacity = '0.5'; btn.style.filter = 'grayscale(100%)'; } else { btn.classList.remove('btn-disabled'); btn.style.opacity = '1'; btn.style.filter = 'none'; }
     },
     clearTower(row) {
         row.querySelectorAll('.drop-zone').forEach(zone => {
@@ -512,18 +525,19 @@ const Game = {
         let target = null;
         try {
             switch(this.tutorialStep) {
+                // Level 1: Basics
                 case 1: target = pool.find(t => t.textContent.trim() === '希'); break;
                 case 2: target = towers[0].children[1]; break; 
                 case 3: target = pool.find(t => t.textContent.trim() === '望'); break;
                 case 4: target = towers[0].children[2]; break; 
-                case 5: NPC.say("很好！...", "繼續", () => { this.tutorialStep = 6; this.updateTutorialUI(); }); break;
+                case 5: NPC.say("很好！接下來試試右邊的塔。\n有時候我們可能會眼花看錯...", "繼續", () => { this.tutorialStep = 6; this.updateTutorialUI(); }); break;
                 case 6: target = pool.find(t => t.textContent.trim() === '游'); break;
                 case 7: target = towers[2].children[1]; break; 
                 case 8: target = pool.find(t => t.textContent.trim() === '泳'); break;
                 case 9: target = towers[2].children[2]; break; 
-                case 10: NPC.say("拆掉重蓋！", "好", () => { this.tutorialStep = 11; this.updateTutorialUI(); }); break;
+                case 10: NPC.say("哎呀，這座塔只有兩層，但「游泳池」需要三個字。\n請點擊「紅色叉叉」拆掉重蓋！", "好", () => { this.tutorialStep = 11; this.updateTutorialUI(); }); break;
                 case 11: target = towers[2].querySelector('.tower-clear-btn'); break;
-                case 12: NPC.say("完成剩下的吧！", "開始", () => { this.tutorialStep = 13; this.updateTutorialUI(); }); break;
+                case 12: NPC.say("現在你知道方法了，請將剩下的詞語完成吧！\n(游泳池、吃飯)", "開始", () => { this.tutorialStep = 13; this.updateTutorialUI(); }); break;
                 case 13: target = pool.find(t => t.textContent.trim() === '游'); break;
                 case 14: target = towers[1].children[1]; break; 
                 case 15: target = pool.find(t => t.textContent.trim() === '泳'); break;
@@ -535,22 +549,25 @@ const Game = {
                 case 21: target = pool.find(t => t.textContent.trim() === '飯'); break;
                 case 22: target = towers[2].children[2]; break; 
                 case 23: target = document.getElementById('btn-check'); break;
+                // Victory 1
                 case 24: setTimeout(() => { target = document.querySelector('#modal-actions button:first-child'); if(target) this.highlightElement(target); }, 300); return;
                 case 25: setTimeout(() => { target = document.querySelector('.heart-btn'); if(target) this.highlightElement(target); }, 300); return;
                 case 26: setTimeout(() => { target = document.querySelector('#modal-actions button'); if(target) this.highlightElement(target); }, 300); return;
                 case 27: setTimeout(() => { target = document.querySelector('#modal-actions button:last-child'); if(target) this.highlightElement(target); }, 300); return;
+                // Level 2: Hint
                 case 30: target = document.getElementById('btn-hint-bottom'); break;
-                case 31: NPC.say("填入了解！", "沒問題", () => { this.tutorialStep = 32; this.updateTutorialUI(); }); break;
+                case 31: NPC.say("瞧！我告訴你第一個詞是「了解」。\n請試著填入吧！", "沒問題", () => { this.tutorialStep = 32; this.updateTutorialUI(); }); break;
                 case 32: target = pool.find(t => t.textContent.trim() === '了'); break;
                 case 33: target = towers[0].children[1]; break; 
                 case 34: target = pool.find(t => t.textContent.trim() === '解'); break;
                 case 35: target = towers[0].children[2]; break; 
-                case 36: NPC.say("再用一次提示。", "好", () => { this.tutorialStep = 37; this.updateTutorialUI(); }); break;
+                case 36: NPC.say("很好！讓我們再用一次提示。", "好", () => { this.tutorialStep = 37; this.updateTutorialUI(); }); break;
                 case 37: target = document.getElementById('btn-hint-bottom'); break;
                 case 38: target = pool.find(t => t.textContent.trim() === '點'); break;
                 case 39: target = towers[1].children[1]; break;
                 case 40: target = pool.find(t => t.textContent.trim() === '選'); break;
                 case 41: target = towers[1].children[2]; break;
+                case 42: NPC.say("顯然最後剩下的就是「詢問」了！\n把它完成吧。", "沒問題", () => { this.tutorialStep = 43; this.updateTutorialUI(); }); break;
                 case 43: target = pool.find(t => t.textContent.trim() === '詢'); break;
                 case 44: target = towers[2].children[1]; break;
                 case 45: target = pool.find(t => t.textContent.trim() === '問'); break;
@@ -656,7 +673,7 @@ const Game = {
                     const txt = document.createElement('div'); txt.innerHTML = `<div class="font-bold text-lg text-stone-800">【${w}】</div><div class="text-sm text-stone-600 mb-1">${info.def}</div>`;
                     const btn = document.createElement('button'); btn.className = 'heart-btn'; btn.textContent = '❤'; if(saved[w]) btn.classList.add('saved');
                     btn.onclick = () => {
-                        if(Game.tutorialStep === 25) { Game.tutorialStep = 26; Game.clearTutorialHighlights(); NPC.say("...", "返回", () => { Game.tutorialStep = 26; Game.showVocab(); }); }
+                        if(Game.tutorialStep === 25) { Game.tutorialStep = 26; Game.clearTutorialHighlights(); NPC.say("太棒了！點擊愛心，就可以將詞語加入筆記本。\n現在點擊『返回』，然後前往下一關吧。", "返回", () => { Game.tutorialStep = 26; Game.showVocab(); }); }
                         const cur = JSON.parse(localStorage.getItem('zyramid_notebook')||'{}'); if(cur[w]) { delete cur[w]; btn.classList.remove('saved'); } else { cur[w] = info; btn.classList.add('saved'); } localStorage.setItem('zyramid_notebook', JSON.stringify(cur));
                     };
                     row.appendChild(txt); row.appendChild(btn); c.appendChild(row);
@@ -673,11 +690,51 @@ const Game = {
         if (Game.tutorialStep > 0 && Game.tutorialStep < 47) {
             const t = e.target.closest('.char-tile');
             const z = e.target.closest('.drop-zone');
+            const towers = document.getElementById('answer-grid').children;
             let valid = false;
-            // 這裡保留基本檢查，完整教學邏輯在 updateTutorialUI
-            if(Game.tutorialStep>=1) valid=true; 
-            if(!valid) return;
+
+            if (Game.tutorialStep === 1 && t && t.textContent.trim() === '希') valid = true;
+            else if (Game.tutorialStep === 2 && z === towers[0].children[1]) valid = true;
+            else if (Game.tutorialStep === 3 && t && t.textContent.trim() === '望') valid = true;
+            else if (Game.tutorialStep === 4 && z === towers[0].children[2]) valid = true;
+            else if (Game.tutorialStep === 6 && t && t.textContent.trim() === '游') valid = true;
+            else if (Game.tutorialStep === 7 && z === towers[2].children[1]) valid = true;
+            else if (Game.tutorialStep === 8 && t && t.textContent.trim() === '泳') valid = true;
+            else if (Game.tutorialStep === 9 && z === towers[2].children[2]) valid = true;
+            else if (Game.tutorialStep === 13 && t && t.textContent.trim() === '游') valid = true;
+            else if (Game.tutorialStep === 14 && z === towers[1].children[1]) valid = true;
+            else if (Game.tutorialStep === 15 && t && t.textContent.trim() === '泳') valid = true;
+            else if (Game.tutorialStep === 16 && z === towers[1].children[2]) valid = true;
+            else if (Game.tutorialStep === 17 && t && t.textContent.trim() === '池') valid = true;
+            else if (Game.tutorialStep === 18 && z === towers[1].children[3]) valid = true;
+            else if (Game.tutorialStep === 19 && t && t.textContent.trim() === '吃') valid = true;
+            else if (Game.tutorialStep === 20 && z === towers[2].children[1]) valid = true;
+            else if (Game.tutorialStep === 21 && t && t.textContent.trim() === '飯') valid = true;
+            else if (Game.tutorialStep === 22 && z === towers[2].children[2]) valid = true;
+            else if (Game.tutorialStep === 23) valid = true; // Check Btn
+            
+            else if (Game.tutorialStep === 30) valid = true; // Hint Btn
+            else if (Game.tutorialStep === 32 && t && t.textContent.trim() === '了') valid = true;
+            else if (Game.tutorialStep === 33 && z === towers[0].children[1]) valid = true;
+            else if (Game.tutorialStep === 34 && t && t.textContent.trim() === '解') valid = true;
+            else if (Game.tutorialStep === 35 && z === towers[0].children[2]) valid = true;
+            
+            else if (Game.tutorialStep === 37) valid = true; // Hint Btn
+            else if (Game.tutorialStep === 38 && t && t.textContent.trim() === '點') valid = true;
+            else if (Game.tutorialStep === 39 && towers[1] && z === towers[1].children[1]) valid = true;
+            else if (Game.tutorialStep === 40 && t && t.textContent.trim() === '選') valid = true;
+            else if (Game.tutorialStep === 41 && towers[1] && z === towers[1].children[2]) valid = true;
+
+            else if (Game.tutorialStep === 43 && t && t.textContent.trim() === '詢') valid = true;
+            else if (Game.tutorialStep === 44 && towers[2] && z === towers[2].children[1]) valid = true;
+            else if (Game.tutorialStep === 45 && t && t.textContent.trim() === '問') valid = true;
+            else if (Game.tutorialStep === 46 && towers[2] && z === towers[2].children[2]) valid = true;
+            
+            else if (Game.tutorialStep === 47) valid = true; // Check Btn
+
+            if (!valid) return;
         }
+
         const tile = e.target.closest('.char-tile');
         if (tile) {
             if (tile.parentElement.classList.contains('drop-zone')) { document.getElementById('character-pool').appendChild(tile); tile.classList.remove('selected'); Game.selectedTile = null; } 
@@ -692,7 +749,12 @@ const Game = {
         if (Game.tutorialStep > 0 && Game.tutorialStep < 47) {
             setTimeout(() => {
                 const next = Game.tutorialStep + 1;
-                const autoSteps = [1,2,3,4, 6,7,8,9, 13,14,15,16,17,18,19,20,21,22, 32,33,34,35, 38,39,40,41, 43,44,45,46];
+                // Add all auto-steps
+                const autoSteps = [
+                    1,2,3,4, 6,7,8,9, 
+                    13,14,15,16,17,18,19,20,21,22,
+                    32,33,34,35, 38,39,40,41, 43,44,45,46
+                ];
                 if (autoSteps.includes(Game.tutorialStep)) { Game.tutorialStep = next; Game.updateTutorialUI(); }
             }, 50);
         }
