@@ -5,16 +5,14 @@ window.onerror = function(msg, url, line) {
     return false;
 };
 
-// --- Google H5 Ads 設定與控制器 ---
-// 用於暫存廣告播放前的音樂狀態
+// --- Google H5 Ads 設定與控制器 (含 Loading 動畫版) ---
 let wasMusicPlaying = false; 
 
 const AdController = {
-    // 狀態標記：廣告是否正在顯示中
+    // 狀態標記
     isAdActive: false,
 
     init() {
-        // H5 Games Ads 全域設定
         window.adConfig = function(o) { 
             o.preloadAdBreaks = 'on'; 
             o.sound = 'on'; 
@@ -22,8 +20,21 @@ const AdController = {
         };
     },
 
+    // --- Loading 控制函式 ---
+    showLoading() {
+        const el = document.getElementById('ad-loading-overlay');
+        if(el) el.style.display = 'flex';
+    },
+
+    hideLoading() {
+        const el = document.getElementById('ad-loading-overlay');
+        if(el) el.style.display = 'none';
+    },
+    // -----------------------
+
     beforeAd() {
-        // 廣告開始播放，標記狀態為活躍
+        // 廣告真的開始播放了，這時隱藏 Loading (因為廣告本身會蓋住螢幕)
+        AdController.hideLoading();
         AdController.isAdActive = true;
 
         const audio = document.getElementById('bg-music');
@@ -37,8 +48,8 @@ const AdController = {
     },
 
     afterAd() {
-        // 廣告結束，標記狀態為非活躍
         AdController.isAdActive = false;
+        AdController.hideLoading(); // 確保結束時也關閉
 
         const audio = document.getElementById('bg-music');
         if (wasMusicPlaying && audio) {
@@ -49,13 +60,16 @@ const AdController = {
 
     // 呼叫獎勵廣告
     showRewardAd(onSuccess) {
+        // 1. 顯示 Loading
+        this.showLoading();
+
         if (typeof adBreak !== 'function') {
-            console.warn("Ads SDK not ready or blocked, using Mock.");
+            console.warn("Ads SDK not ready, using Mock.");
+            this.hideLoading(); // SDK 沒好，關閉 Loading 改用 Mock
             App.watchAdMock(onSuccess); 
             return;
         }
 
-        // 重置狀態
         AdController.isAdActive = false;
 
         adBreak({
@@ -64,28 +78,42 @@ const AdController = {
             beforeAd: AdController.beforeAd,
             afterAd: AdController.afterAd,
             beforeReward: (showAdFn) => { showAdFn(); },
-            adDismissed: () => { Modal.show("提示", "必須看完廣告才能獲得獎勵！"); },
-            adViewed: () => { if (onSuccess) onSuccess(); }
+            adDismissed: () => { 
+                AdController.hideLoading(); // 關閉 Loading
+                Modal.show("提示", "必須看完廣告才能獲得獎勵！"); 
+            },
+            adViewed: () => { 
+                AdController.hideLoading(); // 關閉 Loading
+                if (onSuccess) onSuccess(); 
+            }
         });
+
+        // 3秒保險絲：如果廣告完全沒反應，強制關閉 Loading
+        setTimeout(() => {
+            if (!AdController.isAdActive) {
+                AdController.hideLoading();
+            }
+        }, 3000);
     },
 
-    // --- [修正重點] 插頁廣告 (過關使用) ---
+    // 插頁廣告 (過關使用)
     showInterstitialAd(nextAction) {
-        // 定義一個「確保只執行一次」的函式
+        // 1. 顯示 Loading
+        this.showLoading();
+
         let hasProceeded = false;
         const safeNext = () => {
             if (hasProceeded) return;
             hasProceeded = true;
+            AdController.hideLoading(); // 確保執行下一步前關閉 Loading
             if (nextAction) nextAction();
         };
 
-        // 如果 SDK 根本沒載入，直接下一關
         if (typeof adBreak !== 'function') {
             safeNext();
             return;
         }
 
-        // 重置廣告狀態
         AdController.isAdActive = false;
 
         try {
@@ -94,9 +122,8 @@ const AdController = {
                 name: 'level_complete',
                 beforeAd: AdController.beforeAd,
                 afterAd: AdController.afterAd,
-                // 理論上無論有無廣告，這個都會被呼叫
                 adBreakDone: () => {
-                    console.log("AdBreakDone callback fired.");
+                    // 無論有無廣告填充，這裡都會執行
                     safeNext();
                 }
             });
@@ -105,18 +132,14 @@ const AdController = {
             safeNext();
         }
 
-        // --- 保險絲機制 (Watchdog) ---
-        // 如果 1 秒後：
-        // 1. 廣告沒有正在播放 (!isAdActive)
-        // 2. 且還沒有進入下一關 (!hasProceeded)
-        // 代表 adBreak 被阻擋或是「無廣告填充」但回呼稍微延遲
-        // 此時強制進入下一關，避免卡死。
+        // 保險絲機制：1.5秒後若沒反應則強制下一關
+        // 這裡時間可以稍微長一點點，因為 Loading 已經顯示了，玩家比較有耐心
         setTimeout(() => {
             if (!AdController.isAdActive && !hasProceeded) {
-                console.warn("Ad timeout or blocked. Forcing next level.");
+                console.warn("Ad timeout. Forcing next level.");
                 safeNext();
             }
-        }, 1000); 
+        }, 1500); 
     }
 };
 
@@ -862,4 +885,5 @@ const Game = {
 
 window.addEventListener('load', () => { setTimeout(() => { try { App.init(); } catch (e) { console.error(e); } }, 100); });
 document.addEventListener('click', Game.handleClick);
+
 
