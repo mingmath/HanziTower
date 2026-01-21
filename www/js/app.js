@@ -6,9 +6,13 @@ window.onerror = function(msg, url, line) {
 };
 
 // --- Google H5 Ads 設定與控制器 ---
+// 用於暫存廣告播放前的音樂狀態
 let wasMusicPlaying = false; 
 
 const AdController = {
+    // 狀態標記：廣告是否正在顯示中
+    isAdActive: false,
+
     init() {
         // H5 Games Ads 全域設定
         window.adConfig = function(o) { 
@@ -19,8 +23,10 @@ const AdController = {
     },
 
     beforeAd() {
+        // 廣告開始播放，標記狀態為活躍
+        AdController.isAdActive = true;
+
         const audio = document.getElementById('bg-music');
-        // 安全檢查：只有當 audio 存在時才操作
         if (audio && !audio.paused) {
             wasMusicPlaying = true;
             audio.pause();
@@ -31,8 +37,10 @@ const AdController = {
     },
 
     afterAd() {
+        // 廣告結束，標記狀態為非活躍
+        AdController.isAdActive = false;
+
         const audio = document.getElementById('bg-music');
-        // 安全檢查：只有當 audio 存在且原本有播放時才恢復
         if (wasMusicPlaying && audio) {
             audio.play().catch(()=>{});
         }
@@ -47,6 +55,9 @@ const AdController = {
             return;
         }
 
+        // 重置狀態
+        AdController.isAdActive = false;
+
         adBreak({
             type: 'reward',       
             name: 'get_candle',   
@@ -58,23 +69,54 @@ const AdController = {
         });
     },
 
-    // 呼叫插頁廣告 (過關使用)
+    // --- [修正重點] 插頁廣告 (過關使用) ---
     showInterstitialAd(nextAction) {
+        // 定義一個「確保只執行一次」的函式
+        let hasProceeded = false;
+        const safeNext = () => {
+            if (hasProceeded) return;
+            hasProceeded = true;
+            if (nextAction) nextAction();
+        };
+
+        // 如果 SDK 根本沒載入，直接下一關
         if (typeof adBreak !== 'function') {
-            if(nextAction) nextAction();
+            safeNext();
             return;
         }
 
-        adBreak({
-            type: 'next',
-            name: 'level_complete',
-            beforeAd: AdController.beforeAd,
-            afterAd: AdController.afterAd,
-            adBreakDone: () => {
-                // 確保無論有無廣告都會執行下一步
-                if(nextAction) nextAction();
+        // 重置廣告狀態
+        AdController.isAdActive = false;
+
+        try {
+            adBreak({
+                type: 'next',
+                name: 'level_complete',
+                beforeAd: AdController.beforeAd,
+                afterAd: AdController.afterAd,
+                // 理論上無論有無廣告，這個都會被呼叫
+                adBreakDone: () => {
+                    console.log("AdBreakDone callback fired.");
+                    safeNext();
+                }
+            });
+        } catch (e) {
+            console.error("AdBreak error:", e);
+            safeNext();
+        }
+
+        // --- 保險絲機制 (Watchdog) ---
+        // 如果 1 秒後：
+        // 1. 廣告沒有正在播放 (!isAdActive)
+        // 2. 且還沒有進入下一關 (!hasProceeded)
+        // 代表 adBreak 被阻擋或是「無廣告填充」但回呼稍微延遲
+        // 此時強制進入下一關，避免卡死。
+        setTimeout(() => {
+            if (!AdController.isAdActive && !hasProceeded) {
+                console.warn("Ad timeout or blocked. Forcing next level.");
+                safeNext();
             }
-        });
+        }, 1000); 
     }
 };
 
@@ -158,6 +200,7 @@ const App = {
         
         this.currentViewRealm = Math.floor(Data.unlockedLevel / 100);
         
+        // 初始化時，先載入當前國度的資料
         this.ensureRealmLoaded(this.currentViewRealm, () => {
             this.updateUI(); 
             this.bindEvents(); 
@@ -165,7 +208,9 @@ const App = {
         });
     },
 
+    // 動態載入國度資料
     ensureRealmLoaded(realmIdx, callback) {
+        // 如果該國度資料已經在快取中，直接執行
         if (window.LevelCache && window.LevelCache[realmIdx]) {
             if (callback) callback();
             return;
@@ -174,6 +219,7 @@ const App = {
         if (this.isLoadingRealm) return;
         this.isLoadingRealm = true;
 
+        // 計算檔案名稱：data_01.js, data_02.js ...
         const fileNum = String(realmIdx + 1).padStart(2, '0');
         const script = document.createElement('script');
         script.src = `js/data_${fileNum}.js`;
@@ -188,6 +234,7 @@ const App = {
         script.onerror = () => {
             console.error(`Failed to load data for realm ${realmIdx + 1}`);
             this.isLoadingRealm = false;
+            // 讀取失敗時給予提示
             Modal.show("錯誤", "無法讀取關卡資料，請檢查網路連線。", "重試", "⚠️", () => {
                 this.ensureRealmLoaded(realmIdx, callback);
             });
@@ -379,7 +426,6 @@ const Game = {
                 clearBtn.onclick = (e) => {
                     e.stopPropagation();
                     if (Game.tutorialStep > 0 && idx === 0 && Game.tutorialStep !== 11) return; 
-                    
                     if (Game.tutorialStep === 11 && idx === 0) {
                         const towerIndex = Array.from(grid.children).indexOf(row);
                         if (towerIndex !== 2) return; 
@@ -677,6 +723,7 @@ const Game = {
                         }
                     };
 
+                    // 每 3 關 (3, 6, 9...) 播放一次插頁廣告
                     if (this.currentLevelIdx > 0 && (this.currentLevelIdx + 1) % 3 === 0) {
                         AdController.showInterstitialAd(nextAction);
                     } else {
