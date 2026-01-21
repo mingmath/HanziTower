@@ -30,12 +30,14 @@
 </head>
 <body>
     <div id="error-console" style="display:none; position:fixed; bottom:0; left:0; background:red; color:white; padding:10px; z-index:9999;"></div>
+    
+    <!-- 音樂元件 -->
     <audio id="bg-music" loop></audio>
 
     <!-- 特效層 (彩帶) -->
     <div id="confetti-container"></div>
 
-    <!-- 頂部導航 (這是您原本缺少的關鍵部分) -->
+    <!-- 頂部導航 -->
     <div class="top-bar">
         <!-- 等級顯示 -->
         <div class="level-badge" id="level-display">
@@ -71,7 +73,7 @@
             <button id="btn-daily" class="btn-secondary text-lg">📅 簽到領蠟燭</button>
             <button id="btn-notebook" class="btn-secondary text-lg bg-stone-100">📖 詞語筆記</button>
         </div>
-        <p class="absolute bottom-5 text-stone-400 text-xs">Ver 5.1 Celebration Update</p>
+        <p class="absolute bottom-5 text-stone-400 text-xs">Ver 5.1 Final Fix</p>
     </div>
 
     <!-- 關卡選單 -->
@@ -95,12 +97,15 @@
     <div id="view-game" class="view">
         <div class="game-top-section w-full max-w-2xl flex flex-col items-center flex-grow">
             <div class="w-full flex justify-between items-center mb-2 px-2">
+                <!-- 房子按鈕功能由 Top Bar 取代，這裡留空保持排版 -->
                 <div style="width: 30px;"></div>
+                
                 <div class="scroll-header">
                     <div class="scroll-stick left"></div>
                     <div class="scroll-content" id="current-level-title">第一關</div>
                     <div class="scroll-stick right"></div>
                 </div>
+                
                 <div style="width: 30px;"></div>
             </div>
             
@@ -111,10 +116,12 @@
         <div class="game-bottom-section w-full max-w-lg">
             <div class="w-full border-t-2 border-stone-300 mb-3"></div>
             <div id="character-pool" class="grid-box"></div>
+            
             <div class="flex gap-4 w-full mt-4 mb-2 px-4">
                 <button id="btn-hint-bottom" class="flex-1 bg-amber-500 text-white py-3 rounded font-bold shadow-md flex justify-center items-center gap-2 text-lg active:scale-95 transition-transform">
                     <span>💡</span> 提示 (<span id="btn-hint-count">0</span>)
                 </button>
+                
                 <button id="btn-check" class="flex-1 btn-primary text-lg shadow-md">修築完成</button>
             </div>
         </div>
@@ -130,7 +137,7 @@
         <div id="notebook-list" class="w-full max-w-md flex flex-col gap-3 pb-10"></div>
     </div>
 
-    <!-- 通用 Modals -->
+    <!-- Modals -->
     <div id="modal" class="modal-mask"><div id="modal-content" class="modal-body"><div id="modal-icon" class="text-5xl mb-4 text-stone-700">📜</div><h3 id="modal-title" class="text-xl font-bold mb-3 text-stone-900 tracking-widest">標題</h3><div id="modal-msg" class="text-stone-600 mb-8 text-base leading-relaxed whitespace-pre-wrap">內容</div><div id="modal-actions" class="flex justify-center gap-2"></div></div></div>
     
     <!-- 回首頁確認 -->
