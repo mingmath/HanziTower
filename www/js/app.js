@@ -723,8 +723,8 @@ const Game = {
                         }
                     };
 
-                    // 每 3 關 (3, 6, 9...) 播放一次插頁廣告
-                    if (this.currentLevelIdx > 0 && (this.currentLevelIdx + 1) % 3 === 0) {
+                    // 每 4 關 (4, 8, 12...) 播放一次插頁廣告
+                    if (this.currentLevelIdx > 0 && (this.currentLevelIdx + 1) % 4 === 0) {
                         AdController.showInterstitialAd(nextAction);
                     } else {
                         nextAction();
@@ -862,3 +862,4 @@ const Game = {
 
 window.addEventListener('load', () => { setTimeout(() => { try { App.init(); } catch (e) { console.error(e); } }, 100); });
 document.addEventListener('click', Game.handleClick);
+
