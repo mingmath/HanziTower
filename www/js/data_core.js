@@ -1,6 +1,5 @@
-// --- 核心資料管理 data_core.js ---
+// --- 核心資料管理 data_core.js (Ver 5.0) ---
 
-// 全域快取：用來存放動態載入的關卡資料
 window.LevelCache = {};
 
 const RealmNames = [
@@ -15,7 +14,17 @@ const Data = {
     keys: 3, 
     unlockedLevel: 0, 
     lastCheckIn: null, 
-    playerLevel: 1, 
+    
+    // --- 必須要有這一段等級與任務資料 ---
+    xp: 0,
+    playerLevel: 1,
+    mission: {
+        date: null,
+        count: 0,
+        claimed: [false, false, false]
+    },
+    // ---------------------------------
+    
     musicOn: true,
     
     load() {
@@ -27,7 +36,11 @@ const Data = {
                 this.keys = data.keys ?? 3;
                 this.unlockedLevel = data.unlockedLevel ?? 0;
                 this.lastCheckIn = data.lastCheckIn;
-                this.playerLevel = Math.floor(this.unlockedLevel / 5) + 1;
+                
+                // 載入新欄位，若舊存檔沒有則給予預設值
+                this.xp = data.xp ?? 0;
+                this.playerLevel = data.playerLevel ?? 1;
+                this.mission = data.mission ?? { date: null, count: 0, claimed: [false, false, false] };
             } catch(e) { console.error("Save load failed", e); }
         }
     },
@@ -37,7 +50,10 @@ const Data = {
             coins: this.coins,
             keys: this.keys,
             unlockedLevel: this.unlockedLevel,
-            lastCheckIn: this.lastCheckIn
+            lastCheckIn: this.lastCheckIn,
+            xp: this.xp,
+            playerLevel: this.playerLevel,
+            mission: this.mission
         }));
     }
 };
