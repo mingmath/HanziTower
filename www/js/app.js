@@ -269,7 +269,8 @@ const App = {
     updateUI() { 
         document.getElementById('coin-text').textContent = Data.coins; 
         document.getElementById('key-text').textContent = Data.keys;
-        document.getElementById('hint-count').textContent = Data.keys;
+        const hintCountEl = document.getElementById('btn-hint-count');
+        if (hintCountEl) hintCountEl.textContent = Data.keys
 
         // 防呆邏輯：蠟燭 > 9 (即 10 根以上) 時
         const isFull = Data.keys > 9;
@@ -319,8 +320,6 @@ const App = {
         bind('btn-top-notebook', () => this.showNotebook());
         bind('btn-back-home', () => this.switchView('view-home'));
         bind('btn-stop-game', () => this.showLevels());
-        bind('btn-hint', () => Game.useHint());
-        bind('btn-reset', () => Game.resetLevel());
         bind('btn-check', () => Game.checkAnswer());
         bind('btn-back-note', () => this.switchView('view-home'));
         bind('btn-shop', () => document.getElementById('shop-modal').style.display = 'flex');
@@ -524,14 +523,21 @@ const Game = {
         }
     },
 
-    updateHintButton() {
-        const btn = document.getElementById('btn-hint');
+updateHintButton() {
+        // 【修改】ID 變更為 btn-hint-bottom
+        const btn = document.getElementById('btn-hint-bottom');
         if (!btn) return;
+        
         const lvl = this.getLevelData(this.currentLevelIdx);
+        // 如果提示用完了，變灰色
         if (!lvl || this.hintIndex >= lvl.sols.length) {
             btn.classList.add('btn-disabled');
+            btn.style.opacity = '0.5';
+            btn.style.filter = 'grayscale(100%)';
         } else {
             btn.classList.remove('btn-disabled');
+            btn.style.opacity = '1';
+            btn.style.filter = 'none';
         }
     },
 
@@ -666,12 +672,25 @@ const Game = {
         this.updateHintButton();
     },
 
-    scriptedHint(word) {
+scriptedHint(word) {
         const area = document.getElementById('hint-result-area');
         if(area) {
+            // 清空舊的，確保畫面乾淨
+            area.innerHTML = '';
+            
             const span = document.createElement('span');
-            span.textContent = "提示: " + word; span.style.display = 'block';
+            span.textContent = "💡 " + word; 
             area.appendChild(span);
+            
+            // 加入顯示類別
+            area.classList.add('show');
+            
+            // (選用) 3秒後自動消失，讓畫面清爽
+            // 如果您希望提示一直留著直到過關，請刪除下面這段 setTimeout
+            if (this.hintTimeout) clearTimeout(this.hintTimeout);
+            this.hintTimeout = setTimeout(() => {
+                area.classList.remove('show');
+            }, 4000);
         }
     },
 
@@ -875,3 +894,4 @@ const Game = {
 
 window.addEventListener('load', () => { setTimeout(() => { try { App.init(); } catch (e) { console.error(e); } }, 100); });
 document.addEventListener('click', Game.handleClick);
+
