@@ -5,12 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>字塔 Hanzi Tower</title>
     
-    <!-- Google H5 Games Ads SDK -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4655366880404164"
-     crossorigin="anonymous"
-     data-ad-frequency-hint="30s"></script>
+<!-- ❌ 刪除舊的，改用下面這一段 ✅ -->
+    <!-- Google H5 Games Ads SDK (強制測試模式版) -->
+    <script async
+        data-ad-client="ca-pub-4655366880404164"
+        data-ad-type="h5-games"
+        data-ad-break-test="on"
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js">
+    </script>
     
-    <!-- 廣告參數設定 -->
+    <!-- 初始化設定 (這段要保留) -->
     <script>
         window.adsbygoogle = window.adsbygoogle || [];
         var adBreak = function(o) {adsbygoogle.push(o);}
@@ -19,10 +23,6 @@
             preloadAdBreaks: 'on', 
         });
     </script>
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css">
     
     <style>
         .custom-icon { width: 24px; height: 24px; object-fit: contain; display: inline-block; vertical-align: middle; }
@@ -204,5 +204,6 @@
     </div>
 </body>
 </html>
+
 
 
